@@ -78,7 +78,7 @@ export default function LoginPage() {
       {/* Right side - Image (hidden on mobile) */}
       <div className="hidden md:flex w-1/2 relative overflow-hidden bg-muted">
         <Image
-          src="/login.jpg"
+          src="/login.webp"
           alt="Eden"
           fill
           className="object-cover"
