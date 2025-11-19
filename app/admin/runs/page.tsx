@@ -48,6 +48,7 @@ type RunForm = {
   title: string;
   difficulty: Difficulty;
   scheduled_at: string;
+  scheduled_time: string;
   roster_channel_id: string;
   embed_text?: string;
   capacity?: string;
@@ -70,6 +71,7 @@ export default function AdminRunsIndexPage() {
       title: "",
       difficulty: "Mythic",
       scheduled_at: "",
+      scheduled_time: "20:00",
       roster_channel_id: "",
       capacity: "20",
       embed_text: "",
@@ -123,6 +125,7 @@ export default function AdminRunsIndexPage() {
         title: "",
         difficulty: "Mythic",
         scheduled_at: "",
+        scheduled_time: "20:00",
         roster_channel_id: "",
         capacity: "20",
         embed_text: "",
@@ -216,38 +219,51 @@ export default function AdminRunsIndexPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid gap-2 sm:col-span-2">
-                    <Label htmlFor="scheduled_at">Scheduled At</Label>
-                    <div className="flex gap-2">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className="flex-1 justify-start text-left font-normal">
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {form.watch("scheduled_at") ? format(new Date(form.watch("scheduled_at")), "PPP") : "Pick a date"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 bg-card" align="start">
-                          <Calendar mode="single" selected={form.watch("scheduled_at") ? new Date(form.watch("scheduled_at")) : undefined} onSelect={(date) => {
+                  <div className="grid gap-2">
+                    <Label htmlFor="scheduled_at">Scheduled Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-left font-normal">
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {form.watch("scheduled_at") ? format(new Date(form.watch("scheduled_at")), "PPP") : "Pick a date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[320px] p-3 bg-card" align="start" sideOffset={8}>
+                        <Calendar
+                          mode="single"
+                          selected={form.watch("scheduled_at") ? new Date(form.watch("scheduled_at")) : undefined}
+                          onSelect={(date) => {
                             if (date) {
-                              const current = form.watch("scheduled_at") ? new Date(form.watch("scheduled_at")) : new Date();
-                              date.setHours(current.getHours(), current.getMinutes());
+                              const [hours, minutes] = (form.getValues("scheduled_time") || "20:00").split(":");
+                              date.setHours(Number(hours));
+                              date.setMinutes(Number(minutes));
                               form.setValue("scheduled_at", date.toISOString());
+                            } else {
+                              form.setValue("scheduled_at", "");
                             }
-                          }} />
-                        </PopoverContent>
-                      </Popover>
-                      <Input
-                        type="time"
-                        className="w-32"
-                        value={form.watch("scheduled_at") ? format(new Date(form.watch("scheduled_at")), "HH:mm") : ""}
-                        onChange={(e) => {
-                          const [hours, minutes] = e.target.value.split(":");
-                          const current = form.watch("scheduled_at") ? new Date(form.watch("scheduled_at")) : new Date();
-                          current.setHours(parseInt(hours), parseInt(minutes));
-                          form.setValue("scheduled_at", current.toISOString());
-                        }}
-                      />
-                    </div>
+                          }}
+                        />
+                        <div className="mt-3 grid gap-2">
+                          <Label htmlFor="scheduled_time" className="text-xs text-muted-foreground">Time</Label>
+                          <Input
+                            id="scheduled_time"
+                            type="time"
+                            value={form.watch("scheduled_time")}
+                            onChange={(e) => {
+                              form.setValue("scheduled_time", e.target.value);
+                              const current = form.watch("scheduled_at");
+                              if (current) {
+                                const next = new Date(current);
+                                const [h, m] = e.target.value.split(":");
+                                next.setHours(Number(h));
+                                next.setMinutes(Number(m));
+                                form.setValue("scheduled_at", next.toISOString());
+                              }
+                            }}
+                          />
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="capacity">Capacity</Label>

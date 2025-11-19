@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Wallet, Shield, Clock, Ban, Copy, AlertCircle } from "lucide-react";
+import { Wallet, Shield, Clock, Ban, Copy, AlertCircle, Activity, Target, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -60,6 +60,8 @@ export default function ProfilePage() {
     if (!wallet || wallet.length < 10) return wallet;
     return `${wallet.substring(0, 6)}...${wallet.substring(wallet.length - 4)}`;
   };
+
+  const reliabilityScore = profile?.stats.totalRuns && profile.stats.totalRuns > 0 ? 95 : 0;
 
   if (authLoading || loading) {
     return (
@@ -246,21 +248,62 @@ export default function ProfilePage() {
             <CardDescription>Your activity and reliability metrics</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-6 md:grid-cols-2">
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">Total Runs Attended</p>
-                <p className="text-4xl font-bold">{profile.stats.totalRuns}</p>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-xl border border-border/50 bg-card/50 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Runs Attended</p>
+                    <p className="text-4xl font-semibold text-foreground">{profile.stats.totalRuns}</p>
+                  </div>
+                  <div className="rounded-full bg-primary/10 p-2 text-primary">
+                    <Activity className="h-5 w-5" />
+                  </div>
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">Active participation across Eden rostered runs.</p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">Reliability Score</p>
-                <p className="text-4xl font-bold text-green-500">
-                  {profile.stats.totalRuns > 0 ? "95%" : "—"}
+
+              <div className="rounded-xl border border-border/50 bg-card/50 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Reliability Score</p>
+                    <div className="flex items-end gap-2">
+                      <p className="text-4xl font-semibold text-emerald-500">{profile.stats.totalRuns > 0 ? `${reliabilityScore}%` : "—"}</p>
+                      {profile.stats.totalRuns > 0 && (
+                        <Badge variant="success" className="text-[10px] px-2 py-0.5">Stable</Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="rounded-full bg-emerald-500/10 p-2 text-emerald-400">
+                    <Target className="h-5 w-5" />
+                  </div>
+                </div>
+                <div className="mt-4 h-2 rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-primary"
+                    style={{ width: `${profile.stats.totalRuns > 0 ? reliabilityScore : 0}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {profile.stats.totalRuns > 0 ? "Consistency measured from attendance and punctuality." : "Complete more runs to unlock your score."}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {profile.stats.totalRuns > 0
-                    ? "Based on attendance and performance"
-                    : "Complete runs to see your score"}
+              </div>
+
+              <div className="rounded-xl border border-border/50 bg-card/50 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Next Milestone</p>
+                    <p className="text-4xl font-semibold text-foreground">{Math.max(10 - profile.stats.totalRuns, 0)}</p>
+                  </div>
+                  <div className="rounded-full bg-amber-500/10 p-2 text-amber-400">
+                    <Trophy className="h-5 w-5" />
+                  </div>
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Runs remaining to unlock premium payouts tier.
                 </p>
+                <div className="mt-3 text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">Tip:</span> Stay available and sign up early for high-demand raids.
+                </div>
               </div>
             </div>
           </CardContent>

@@ -95,6 +95,7 @@ export interface Character {
   ilevel: number;
   specs: string[];
   wcl_logs?: number;
+  status?: "Available" | "Unavailable";
 }
 
 export const characterApi = {
@@ -108,6 +109,11 @@ export const characterApi = {
     apiCall<Character>(`/api/characters/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
+    }),
+  updateStatus: (id: string, status: "Available" | "Unavailable") =>
+    apiCall<Character>(`/api/characters/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
     }),
   delete: (id: string) =>
     apiCall<void>(`/api/characters/${id}`, { method: "DELETE" }),
