@@ -50,7 +50,7 @@ const CLASS_COLORS: Record<string, string> = {
   "Paladin": "#F58CBA",
   "Hunter": "#ABD473",
   "Rogue": "#FFF569",
-  "Priest": "#ffdbfcff",
+  "Priest": "#ffe4fdff",
   "Death Knight": "#C41F3B",
   "Shaman": "#0070DE",
   "Mage": "#69CCF0",

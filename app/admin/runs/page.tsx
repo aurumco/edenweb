@@ -48,7 +48,8 @@ type RunForm = {
   title: string;
   difficulty: Difficulty;
   scheduled_at: string;
-  scheduled_time: string;
+  scheduled_hour: string;
+  scheduled_minute: string;
   roster_channel_id: string;
   embed_text?: string;
   capacity?: string;
@@ -72,13 +73,17 @@ export default function AdminRunsIndexPage() {
       title: "",
       difficulty: "Mythic",
       scheduled_at: "",
-      scheduled_time: "20:00",
+      scheduled_hour: "20",
+      scheduled_minute: "00",
       roster_channel_id: "",
       capacity: "20",
       embed_text: "",
     },
     mode: "onChange",
   });
+
+  const hourOptions = useMemo(() => Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")), []);
+  const minuteOptions = ["00", "15", "30", "45"];
 
   // Fetch runs on mount
   useEffect(() => {
@@ -127,7 +132,8 @@ export default function AdminRunsIndexPage() {
         title: "",
         difficulty: "Mythic",
         scheduled_at: "",
-        scheduled_time: "20:00",
+        scheduled_hour: "20",
+        scheduled_minute: "00",
         roster_channel_id: "",
         capacity: "20",
         embed_text: "",
@@ -197,7 +203,7 @@ export default function AdminRunsIndexPage() {
                 <Plus className="h-4 w-4" /> Create Run
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card max-w-3xl">
+            <DialogContent className="bg-card w-full sm:max-w-3xl">
               <DialogHeader>
                 <DialogTitle>Create New Run</DialogTitle>
                 <DialogDescription>Set up a new run with all necessary details</DialogDescription>
@@ -284,15 +290,10 @@ export default function AdminRunsIndexPage() {
                     />
                   </div>
 
-                  <DialogFooter>
-                    <Button type="submit" disabled={!isValid}>
-                      Create
-                    </Button>
-                  </DialogFooter>
                 </div>
 
                 {/* Right column - schedule panel */}
-                <div className="hidden md:block rounded-2xl border border-border/60 bg-card/70 p-4 space-y-4">
+                <div className="rounded-2xl border border-border/60 bg-card/70 p-4 space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium">Schedule</p>
@@ -309,7 +310,8 @@ export default function AdminRunsIndexPage() {
                       selected={form.watch("scheduled_at") ? new Date(form.watch("scheduled_at")) : undefined}
                       onSelect={(date) => {
                         if (date) {
-                          const [hours, minutes] = (form.getValues("scheduled_time") || "20:00").split(":");
+                          const hours = form.getValues("scheduled_hour") || "20";
+                          const minutes = form.getValues("scheduled_minute") || "00";
                           date.setHours(Number(hours));
                           date.setMinutes(Number(minutes));
                           form.setValue("scheduled_at", date.toISOString(), { shouldValidate: true });
@@ -321,31 +323,75 @@ export default function AdminRunsIndexPage() {
                     />
 
                     <div className="grid gap-2">
-                      <Label htmlFor="scheduled_time" className="text-xs text-muted-foreground">
+                      <Label htmlFor="scheduled_hour" className="text-xs text-muted-foreground">
                         Time
                       </Label>
-                      <div className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm">
-                        <ClockIcon className="h-4 w-4 text-muted-foreground" />
-                        <input
-                          id="scheduled_time"
-                          type="time"
-                          className="flex-1 bg-transparent text-sm outline-none"
-                          value={form.watch("scheduled_time")}
-                          onChange={(e) => {
-                            form.setValue("scheduled_time", e.target.value);
-                            const current = form.watch("scheduled_at");
-                            if (current) {
-                              const next = new Date(current);
-                              const [h, m] = e.target.value.split(":");
-                              next.setHours(Number(h));
-                              next.setMinutes(Number(m));
-                              form.setValue("scheduled_at", next.toISOString(), { shouldValidate: true });
-                            }
-                          }}
-                        />
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                          <ClockIcon className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-muted-foreground">Select time</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Select
+                            value={form.watch("scheduled_hour")}
+                            onValueChange={(value) => {
+                              form.setValue("scheduled_hour", value);
+                              const current = form.getValues("scheduled_at");
+                              if (current) {
+                                const next = new Date(current);
+                                next.setHours(Number(value));
+                                next.setMinutes(Number(form.getValues("scheduled_minute")));
+                                form.setValue("scheduled_at", next.toISOString(), { shouldValidate: true });
+                              }
+                            }}
+                          >
+                            <SelectTrigger aria-label="Hour">
+                              <SelectValue placeholder="HH" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-64">
+                              {hourOptions.map((hour) => (
+                                <SelectItem key={hour} value={hour}>
+                                  {hour}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Select
+                            value={form.watch("scheduled_minute")}
+                            onValueChange={(value) => {
+                              form.setValue("scheduled_minute", value);
+                              const current = form.getValues("scheduled_at");
+                              if (current) {
+                                const next = new Date(current);
+                                next.setHours(Number(form.getValues("scheduled_hour")));
+                                next.setMinutes(Number(value));
+                                form.setValue("scheduled_at", next.toISOString(), { shouldValidate: true });
+                              }
+                            }}
+                          >
+                            <SelectTrigger aria-label="Minute">
+                              <SelectValue placeholder="MM" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {minuteOptions.map((minute) => (
+                                <SelectItem key={minute} value={minute}>
+                                  {minute}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                     </div>
                   </div>
+                </div>
+
+                <div className="md:col-span-2 flex justify-end pt-2">
+                  <DialogFooter className="w-full justify-end gap-2">
+                    <Button type="submit" disabled={!isValid}>
+                      Create
+                    </Button>
+                  </DialogFooter>
                 </div>
               </form>
             </DialogContent>
