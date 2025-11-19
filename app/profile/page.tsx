@@ -1,0 +1,290 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/auth-provider";
+import { PlayerShell } from "@/components/player-shell";
+import { authApi, UserProfile } from "@/lib/api";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Wallet, Shield, Clock, Ban, Copy, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
+import { format } from "date-fns";
+
+export default function ProfilePage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/login");
+    }
+  }, [user, authLoading, router]);
+
+  // Fetch profile data
+  useEffect(() => {
+    if (!authLoading && user) {
+      const fetchProfile = async () => {
+        try {
+          setLoading(true);
+          const data = await authApi.getProfile();
+          setProfile(data);
+          setError(null);
+        } catch (err) {
+          console.error("Failed to fetch profile:", err);
+          setError("Failed to load profile data");
+          toast.error("Failed to load profile");
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchProfile();
+    }
+  }, [authLoading, user]);
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied to clipboard`);
+  };
+
+  const maskWallet = (wallet: string) => {
+    if (!wallet || wallet.length < 10) return wallet;
+    return `${wallet.substring(0, 6)}...${wallet.substring(wallet.length - 4)}`;
+  };
+
+  if (authLoading || loading) {
+    return (
+      <PlayerShell>
+        <div className="space-y-6">
+          {/* Identity Card Skeleton */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-16 w-16 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-6 w-32" />
+                  <Skeleton className="h-4 w-48" />
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+
+          {/* Finance Cards Skeleton */}
+          <div className="grid gap-4 md:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <Card key={i}>
+                <CardHeader>
+                  <Skeleton className="h-6 w-24" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-8 w-32" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Stats Skeleton */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-32" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-24" />
+            </CardContent>
+          </Card>
+        </div>
+      </PlayerShell>
+    );
+  }
+
+  if (error || !profile) {
+    return (
+      <PlayerShell>
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              Error Loading Profile
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">{error || "Failed to load profile data"}</p>
+          </CardContent>
+        </Card>
+      </PlayerShell>
+    );
+  }
+
+  return (
+    <PlayerShell>
+      <div className="space-y-6">
+        {/* Identity Card */}
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+              <div className="flex items-center gap-4 w-full sm:w-auto">
+                <Avatar className="h-16 w-16 flex-shrink-0">
+                  <AvatarImage src={user?.avatar} />
+                  <AvatarFallback>{user?.username.substring(0, 2).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <CardTitle className="text-xl sm:text-2xl truncate">{profile.user.displayName}</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">
+                    Eden Member Since {format(new Date(profile.user.joinDate), "MMMM yyyy")}
+                  </CardDescription>
+                </div>
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                <Badge variant={profile.finance.isFrozen ? "destructive" : "default"} className="gap-1 text-xs sm:text-sm">
+                  {profile.finance.isFrozen ? (
+                    <>
+                      <Ban className="h-3 w-3" />
+                      Frozen
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="h-3 w-3" />
+                      Active
+                    </>
+                  )}
+                </Badge>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        {/* Financial Stats */}
+        <div className="grid gap-4 md:grid-cols-3">
+          {/* Wallet Balance */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Wallet className="h-4 w-4 text-yellow-500" />
+                Wallet Balance
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-yellow-500">
+                {(profile.finance.currentBalance / 1000).toFixed(1)}K
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {profile.finance.currentBalance.toLocaleString()} USDT
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Pending Escrow */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Clock className="h-4 w-4 text-blue-500" />
+                Pending Escrow
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-blue-500">
+                {(profile.finance.pendingEscrow / 1000).toFixed(1)}K
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {profile.finance.pendingEscrow.toLocaleString()} USDT
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Wallet Address */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Wallet Address</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {profile.user.wallet ? (
+                <div className="space-y-2">
+                  <p className="text-sm font-mono text-muted-foreground break-all">
+                    {maskWallet(profile.user.wallet)}
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full gap-1"
+                    onClick={() => copyToClipboard(profile.user.wallet, "Wallet address")}
+                  >
+                    <Copy className="h-3 w-3" />
+                    Copy
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-500">
+                    <AlertCircle className="h-4 w-4" />
+                    No Wallet Set
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Register your USDT (BEP-20) wallet to receive payouts.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Performance Stats */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Performance
+            </CardTitle>
+            <CardDescription>Your activity and reliability metrics</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-6 md:grid-cols-2">
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">Total Runs Attended</p>
+                <p className="text-4xl font-bold">{profile.stats.totalRuns}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">Reliability Score</p>
+                <p className="text-4xl font-bold text-green-500">
+                  {profile.stats.totalRuns > 0 ? "95%" : "—"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {profile.stats.totalRuns > 0
+                    ? "Based on attendance and performance"
+                    : "Complete runs to see your score"}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Aliases Section */}
+        {profile.aliases.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Aliases</CardTitle>
+              <CardDescription>Your registered character aliases</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {profile.aliases.map((alias) => (
+                  <Badge key={alias} variant="secondary">
+                    {alias}
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </PlayerShell>
+  );
+}

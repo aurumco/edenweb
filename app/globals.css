@@ -1,0 +1,102 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+:root {
+  --background: #090909;
+  --foreground: #e4e4e7;
+  --muted: #1a1a1a;
+  --muted-foreground: #a1a1aa;
+  --card: #141414;
+  --card-foreground: #e4e4e7;
+  --popover: #1a1a1a;
+  --popover-foreground: #e4e4e7;
+  --primary: #fb923c;
+  --primary-foreground: #0a0a0a;
+  --secondary: #1f1f1f;
+  --secondary-foreground: #e4e4e7;
+  --accent: #232323;
+  --accent-foreground: #e4e4e7;
+  --destructive: #f12929;
+  --destructive-foreground: #fef2f2;
+  --border: #2a2a2a;
+  --input: #232323;
+  --ring: #fb923c;
+  --radius: 0.75rem;
+}
+
+html.light {
+  --background: #f5f5f5;
+  --foreground: #1a1a1a;
+  --muted: #e5e5e5;
+  --muted-foreground: #5a5a5a;
+  --card: #ffffff;
+  --card-foreground: #1a1a1a;
+  --popover: #ffffff;
+  --popover-foreground: #1a1a1a;
+  --primary: #fb923c;
+  --primary-foreground: #ffffff;
+  --secondary: #f0f0f0;
+  --secondary-foreground: #1a1a1a;
+  --accent: #e8e8e8;
+  --accent-foreground: #1a1a1a;
+  --destructive: #d62424;
+  --destructive-foreground: #ffffff;
+  --border: #d5d5d5;
+  --input: #e5e5e5;
+  --ring: #fb923c;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius: var(--radius);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+}
+
+/* Smooth transitions for common containers */
+[data-slot="card"], [data-slot="tabs-content"], [data-slot="dropdown-menu-content"] {
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+}
+
+/* Minimal themed scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 9999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--accent);
+}
