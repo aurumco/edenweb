@@ -227,7 +227,6 @@ function PlayerDashboardContent() {
   }), [characters]);
 
   const handleToggleStatus = async (character: Character, nextChecked: boolean) => {
-    const previousStatus: "Available" | "Unavailable" = character.status ?? "Available";
     const nextStatus: "Available" | "Unavailable" = nextChecked ? "Available" : "Unavailable";
     setCharacters((prev) =>
       prev.map((c) => (c.id === character.id ? { ...c, status: nextStatus } : c))
@@ -238,8 +237,9 @@ function PlayerDashboardContent() {
     } catch (err) {
       toast.error("Failed to update status");
       console.error(err);
+      // revert on failure
       setCharacters((prev) =>
-        prev.map((c) => (c.id === character.id ? { ...c, status: previousStatus } : c))
+        prev.map((c) => (c.id === character.id ? { ...c, status: character.status ?? "Available" } : c))
       );
     }
   };
@@ -387,7 +387,6 @@ function PlayerDashboardContent() {
                       <TableHead>Class</TableHead>
                       <TableHead>iLevel</TableHead>
                       <TableHead>Roles</TableHead>
-                      <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -415,48 +414,48 @@ function PlayerDashboardContent() {
                               })}
                             </div>
                           </TableCell>
-                          <TableCell>
-                            <Badge
-                              className="px-2 py-0.5 text-xs rounded-full"
-                              variant={c.status === "Unavailable" ? "destructive" : "success"}
-                            >
-                              {c.status === "Unavailable" ? "Unavailable" : "Available"}
-                            </Badge>
-                          </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-3">
-                              <Switch
-                                aria-label="Toggle availability"
-                                checked={c.status !== "Unavailable"}
-                                onCheckedChange={(checked) => handleToggleStatus(c, checked)}
-                              />
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  aria-label="Toggle availability"
+                                  checked={c.status !== "Unavailable"}
+                                  onCheckedChange={(checked) => handleToggleStatus(c, checked)}
+                                />
+                                <Badge
+                                  className="px-2 py-0.5 text-xs rounded-full"
+                                  variant={c.status === "Unavailable" ? "destructive" : "success"}
+                                >
+                                  {c.status === "Unavailable" ? "Unavailable" : "Available"}
+                                </Badge>
+                              </div>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button size="icon" variant="ghost">⋯</Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem
-                                      variant="destructive"
-                                      onSelect={(e) => e.preventDefault()}
-                                    >
-                                      <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                    </DropdownMenuItem>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Delete Character</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Are you sure you want to delete this character? This action cannot be undone.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <div className="flex justify-end gap-2">
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => removeCharacter(c.id)}>Delete</AlertDialogAction>
-                                    </div>
-                                  </AlertDialogContent>
-                                </AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <DropdownMenuItem
+                                        variant="destructive"
+                                        onSelect={(e) => e.preventDefault()}
+                                      >
+                                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                      </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete Character</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to delete this character? This action cannot be undone.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <div className="flex justify-end gap-2">
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => removeCharacter(c.id)}>Delete</AlertDialogAction>
+                                      </div>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </div>

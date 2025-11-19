@@ -32,7 +32,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Plus, Calendar as CalendarIcon, Copy, FileDown, Trash2 } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Clock as ClockIcon, Copy, FileDown, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input as TextInput } from "@/components/ui/input";
 import { format } from "date-fns";
@@ -65,7 +65,7 @@ export default function AdminRunsIndexPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [submittingRun, setSubmittingRun] = useState(false);
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [scheduledOpen, setScheduledOpen] = useState(false);
   const pageSize = 10;
   const form = useForm<RunForm>({
     defaultValues: {
@@ -109,35 +109,6 @@ export default function AdminRunsIndexPage() {
       v.roster_channel_id.trim().length > 0
     );
   }, [form.watch()]);
-
-  const scheduledValue = form.watch("scheduled_at");
-  const scheduledLabel = scheduledValue ? format(new Date(scheduledValue), "dd MMM • HH:mm") : "Pick date & time";
-
-  const mergeDateAndTime = (date: Date, timeValue: string) => {
-    const [hours, minutes] = timeValue.split(":").map((val) => Number(val) || 0);
-    const merged = new Date(date);
-    merged.setHours(hours);
-    merged.setMinutes(minutes);
-    merged.setSeconds(0, 0);
-    return merged;
-  };
-
-  const handleDateSelect = (date?: Date) => {
-    if (!date) {
-      form.setValue("scheduled_at", "");
-      return;
-    }
-    const merged = mergeDateAndTime(date, form.getValues("scheduled_time") || "20:00");
-    form.setValue("scheduled_at", merged.toISOString());
-  };
-
-  const handleTimeChange = (value: string) => {
-    form.setValue("scheduled_time", value);
-    const current = form.getValues("scheduled_at");
-    if (!current) return;
-    const merged = mergeDateAndTime(new Date(current), value);
-    form.setValue("scheduled_at", merged.toISOString());
-  };
 
   async function onSubmit(data: RunForm) {
     try {
@@ -250,33 +221,78 @@ export default function AdminRunsIndexPage() {
                     </Select>
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="scheduled_at">Scheduled Date</Label>
-                    <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                    <Label htmlFor="scheduled_at">Scheduled</Label>
+                    <Popover open={scheduledOpen} onOpenChange={setScheduledOpen}>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal">
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal"
+                        >
                           <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                          {scheduledLabel}
+                          {form.watch("scheduled_at")
+                            ? format(new Date(form.watch("scheduled_at")), "dd MMM - HH:mm")
+                            : "DD Mon - HH:MM"}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[320px] space-y-4 p-4 bg-card border border-border/60" align="start" sideOffset={8}>
-                        <Calendar
-                          mode="single"
-                          selected={scheduledValue ? new Date(scheduledValue) : undefined}
-                          onSelect={handleDateSelect}
-                          initialFocus
-                        />
-                        <div className="grid gap-2">
-                          <Label htmlFor="scheduled_time" className="text-xs text-muted-foreground">Time</Label>
-                          <Input
-                            id="scheduled_time"
-                            type="time"
-                            value={form.watch("scheduled_time")}
-                            onChange={(e) => handleTimeChange(e.target.value)}
+                      <PopoverContent
+                        className="w-[300px] p-3 bg-card border border-border/60 shadow-xl"
+                        align="start"
+                        side="top"
+                        sideOffset={12}
+                      >
+                        <div className="flex flex-col gap-3">
+                          <Calendar
+                            mode="single"
+                            selected={form.watch("scheduled_at") ? new Date(form.watch("scheduled_at")) : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                const [hours, minutes] = (form.getValues("scheduled_time") || "20:00").split(":");
+                                date.setHours(Number(hours));
+                                date.setMinutes(Number(minutes));
+                                form.setValue("scheduled_at", date.toISOString(), { shouldValidate: true });
+                              } else {
+                                form.setValue("scheduled_at", "", { shouldValidate: true });
+                              }
+                            }}
                           />
+                          <div className="grid gap-2">
+                            <Label htmlFor="scheduled_time" className="text-xs text-muted-foreground">
+                              Time
+                            </Label>
+                            <div className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm">
+                              <ClockIcon className="h-4 w-4 text-muted-foreground" />
+                              <input
+                                id="scheduled_time"
+                                type="time"
+                                className="flex-1 bg-transparent text-sm outline-none"
+                                value={form.watch("scheduled_time")}
+                                onChange={(e) => {
+                                  form.setValue("scheduled_time", e.target.value);
+                                  const current = form.watch("scheduled_at");
+                                  if (current) {
+                                    const next = new Date(current);
+                                    const [h, m] = e.target.value.split(":");
+                                    next.setHours(Number(h));
+                                    next.setMinutes(Number(m));
+                                    form.setValue("scheduled_at", next.toISOString(), { shouldValidate: true });
+                                  }
+                                }}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex justify-end">
+                            <Button
+                              type="button"
+                              size="sm"
+                              className="px-4"
+                              onClick={() => {
+                                setScheduledOpen(false);
+                              }}
+                            >
+                              Apply
+                            </Button>
+                          </div>
                         </div>
-                        <Button size="sm" className="w-full" onClick={() => setDatePickerOpen(false)}>
-                          Apply
-                        </Button>
                       </PopoverContent>
                     </Popover>
                   </div>
