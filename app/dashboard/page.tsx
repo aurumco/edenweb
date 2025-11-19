@@ -209,6 +209,31 @@ function PlayerDashboardContent() {
     }
   }
 
+  async function toggleCharacterStatus(id: string, currentStatus: string) {
+    try {
+      const newStatus = currentStatus === "Available" ? "Unavailable" : "Available";
+      // Optimistically update UI
+      setCharacters((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, status: newStatus as any } : c))
+      );
+      // Call API to persist
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://api.edenhub.net"}/api/characters/${id}/status`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      toast.success(`Character marked as ${newStatus}`);
+    } catch (err) {
+      // Revert on error
+      setCharacters((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, status: currentStatus as any } : c))
+      );
+      toast.error("Failed to update character status");
+      console.error(err);
+    }
+  }
+
   const pagedCharacters = useMemo(() => {
     const start = (pageChars - 1) * pageSize;
     return characters.slice(start, start + pageSize);
@@ -397,7 +422,15 @@ function PlayerDashboardContent() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge className="px-2 py-0.5 text-xs rounded-full" variant="success">Available</Badge>
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={c.status === "Available"}
+                                onCheckedChange={() => toggleCharacterStatus(c.id, c.status || "Available")}
+                              />
+                              <Badge className="px-2 py-0.5 text-xs rounded-full" variant={c.status === "Available" ? "success" : "destructive"}>
+                                {c.status || "Available"}
+                              </Badge>
+                            </div>
                           </TableCell>
                           <TableCell className="text-right">
                             <DropdownMenu>
@@ -407,7 +440,7 @@ function PlayerDashboardContent() {
                               <DropdownMenuContent align="end">
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem variant="destructive">
+                                    <DropdownMenuItem variant="destructive" onSelect={(e) => e.preventDefault()}>
                                       <Trash2 className="mr-2 h-4 w-4" /> Delete
                                     </DropdownMenuItem>
                                   </AlertDialogTrigger>

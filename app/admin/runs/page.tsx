@@ -216,19 +216,38 @@ export default function AdminRunsIndexPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid gap-2">
+                  <div className="grid gap-2 sm:col-span-2">
                     <Label htmlFor="scheduled_at">Scheduled At</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal">
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {form.watch("scheduled_at") ? format(new Date(form.watch("scheduled_at")), "PPP HH:mm") : "Pick a date and time"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 bg-card" align="start">
-                        <Calendar mode="single" selected={form.watch("scheduled_at") ? new Date(form.watch("scheduled_at")) : undefined} onSelect={(date) => form.setValue("scheduled_at", date ? date.toISOString() : "")} />
-                      </PopoverContent>
-                    </Popover>
+                    <div className="flex gap-2">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className="flex-1 justify-start text-left font-normal">
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {form.watch("scheduled_at") ? format(new Date(form.watch("scheduled_at")), "PPP") : "Pick a date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 bg-card" align="start">
+                          <Calendar mode="single" selected={form.watch("scheduled_at") ? new Date(form.watch("scheduled_at")) : undefined} onSelect={(date) => {
+                            if (date) {
+                              const current = form.watch("scheduled_at") ? new Date(form.watch("scheduled_at")) : new Date();
+                              date.setHours(current.getHours(), current.getMinutes());
+                              form.setValue("scheduled_at", date.toISOString());
+                            }
+                          }} />
+                        </PopoverContent>
+                      </Popover>
+                      <Input
+                        type="time"
+                        className="w-32"
+                        value={form.watch("scheduled_at") ? format(new Date(form.watch("scheduled_at")), "HH:mm") : ""}
+                        onChange={(e) => {
+                          const [hours, minutes] = e.target.value.split(":");
+                          const current = form.watch("scheduled_at") ? new Date(form.watch("scheduled_at")) : new Date();
+                          current.setHours(parseInt(hours), parseInt(minutes));
+                          form.setValue("scheduled_at", current.toISOString());
+                        }}
+                      />
+                    </div>
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="capacity">Capacity</Label>
