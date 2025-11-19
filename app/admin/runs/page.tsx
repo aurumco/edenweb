@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -203,13 +203,13 @@ export default function AdminRunsIndexPage() {
                 <Plus className="h-4 w-4" /> Create Run
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card w-full sm:max-w-3xl">
+            <DialogContent showCloseButton={false} className="bg-card w-full sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Create New Run</DialogTitle>
                 <DialogDescription>Set up a new run with all necessary details</DialogDescription>
               </DialogHeader>
               <form
-                className="grid gap-6 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1.1fr)] items-start"
+                className="grid gap-6 md:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] items-start"
                 onSubmit={form.handleSubmit(onSubmit as any)}
               >
                 {/* Left column - main form fields */}
@@ -280,16 +280,27 @@ export default function AdminRunsIndexPage() {
                     </div>
                   </div>
 
-                  <div className="grid gap-2">
-                    <Label htmlFor="embed_text">Embed Text</Label>
-                    <Textarea
-                      id="embed_text"
-                      placeholder="Message content for Discord embed"
-                      value={form.watch("embed_text")}
-                      onChange={(e) => form.setValue("embed_text", e.target.value)}
-                    />
+                  <div className="space-y-3">
+                    <div className="grid gap-2">
+                      <Label htmlFor="embed_text">Embed Text</Label>
+                      <Textarea
+                        id="embed_text"
+                        placeholder="Message content for Discord embed"
+                        value={form.watch("embed_text")}
+                        onChange={(e) => form.setValue("embed_text", e.target.value)}
+                      />
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <DialogClose asChild>
+                        <Button type="button" variant="secondary" className="bg-muted text-muted-foreground hover:bg-muted/80">
+                          Close
+                        </Button>
+                      </DialogClose>
+                      <Button type="submit" disabled={!isValid}>
+                        Create
+                      </Button>
+                    </div>
                   </div>
-
                 </div>
 
                 {/* Right column - schedule panel */}
@@ -322,76 +333,63 @@ export default function AdminRunsIndexPage() {
                       className="rounded-xl border border-border/40 bg-background/40"
                     />
 
-                    <div className="grid gap-2">
-                      <Label htmlFor="scheduled_hour" className="text-xs text-muted-foreground">
-                        Time
-                      </Label>
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-2 text-sm font-medium">
-                          <ClockIcon className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-muted-foreground">Select time</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <Select
-                            value={form.watch("scheduled_hour")}
-                            onValueChange={(value) => {
-                              form.setValue("scheduled_hour", value);
-                              const current = form.getValues("scheduled_at");
-                              if (current) {
-                                const next = new Date(current);
-                                next.setHours(Number(value));
-                                next.setMinutes(Number(form.getValues("scheduled_minute")));
-                                form.setValue("scheduled_at", next.toISOString(), { shouldValidate: true });
-                              }
-                            }}
-                          >
-                            <SelectTrigger aria-label="Hour">
-                              <SelectValue placeholder="HH" />
-                            </SelectTrigger>
-                            <SelectContent className="max-h-64">
-                              {hourOptions.map((hour) => (
-                                <SelectItem key={hour} value={hour}>
-                                  {hour}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Select
-                            value={form.watch("scheduled_minute")}
-                            onValueChange={(value) => {
-                              form.setValue("scheduled_minute", value);
-                              const current = form.getValues("scheduled_at");
-                              if (current) {
-                                const next = new Date(current);
-                                next.setHours(Number(form.getValues("scheduled_hour")));
-                                next.setMinutes(Number(value));
-                                form.setValue("scheduled_at", next.toISOString(), { shouldValidate: true });
-                              }
-                            }}
-                          >
-                            <SelectTrigger aria-label="Minute">
-                              <SelectValue placeholder="MM" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {minuteOptions.map((minute) => (
-                                <SelectItem key={minute} value={minute}>
-                                  {minute}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <ClockIcon className="h-4 w-4" />
+                        <span>Select time</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Select
+                          value={form.watch("scheduled_hour")}
+                          onValueChange={(value) => {
+                            form.setValue("scheduled_hour", value);
+                            const current = form.getValues("scheduled_at");
+                            if (current) {
+                              const next = new Date(current);
+                              next.setHours(Number(value));
+                              next.setMinutes(Number(form.getValues("scheduled_minute")));
+                              form.setValue("scheduled_at", next.toISOString(), { shouldValidate: true });
+                            }
+                          }}
+                        >
+                          <SelectTrigger aria-label="Hour" className="justify-between">
+                            <SelectValue placeholder="HH" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-64">
+                            {hourOptions.map((hour) => (
+                              <SelectItem key={hour} value={hour}>
+                                {hour}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={form.watch("scheduled_minute")}
+                          onValueChange={(value) => {
+                            form.setValue("scheduled_minute", value);
+                            const current = form.getValues("scheduled_at");
+                            if (current) {
+                              const next = new Date(current);
+                              next.setHours(Number(form.getValues("scheduled_hour")));
+                              next.setMinutes(Number(value));
+                              form.setValue("scheduled_at", next.toISOString(), { shouldValidate: true });
+                            }
+                          }}
+                        >
+                          <SelectTrigger aria-label="Minute" className="justify-between">
+                            <SelectValue placeholder="MM" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {minuteOptions.map((minute) => (
+                              <SelectItem key={minute} value={minute}>
+                                {minute}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </div>
-                </div>
-
-                <div className="md:col-span-2 flex justify-end pt-2">
-                  <DialogFooter className="w-full justify-end gap-2">
-                    <Button type="submit" disabled={!isValid}>
-                      Create
-                    </Button>
-                  </DialogFooter>
                 </div>
               </form>
             </DialogContent>
