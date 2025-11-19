@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { AdminShell } from "@/components/admin-shell";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { Shield, Heart, Wand2, X, ChevronDown } from "lucide-react";
+import { signupApi, rosterApi, runApi } from "@/lib/api";
 
 const DIFFICULTIES = ["Mythic", "Heroic", "Normal"] as const;
 type Difficulty = (typeof DIFFICULTIES)[number];
@@ -66,48 +67,15 @@ function classGradient(color: string) {
   } as React.CSSProperties;
 }
 
-const SAMPLE_SIGNUPS: Signup[] = [
-  {
-    player: { id: "p1", name: "Aren" },
-    signed: true,
-    backup: false,
-    characters: [
-      { id: "c1", name: "Ironwall", class: "Warrior", ilevel: 730, roles: ["Tank"], log: 98, status: { M: "G", H: "G", N: "R" } },
-      { id: "c2", name: "Lightmender", class: "Priest", ilevel: 725, roles: ["Healer", "DPS"], log: 97, status: { M: "G", H: "G", N: "G" } },
-    ],
-  },
-  {
-    player: { id: "p2", name: "Lyra" },
-    signed: true,
-    backup: false,
-    characters: [
-      { id: "c3", name: "Stormbinder", class: "Shaman", ilevel: 725, roles: ["Healer", "DPS"], log: 99, status: { M: "G", H: "G", N: "G" } },
-    ],
-  },
-  {
-    player: { id: "p3", name: "Kayn" },
-    signed: true,
-    backup: false,
-    characters: [
-      { id: "c4", name: "Shadowcleave", class: "Demon Hunter", ilevel: 728, roles: ["DPS"], log: 96, status: { M: "G", H: "G", N: "G" } },
-    ],
-  },
-  {
-    player: { id: "p4", name: "Nara" },
-    signed: false,
-    backup: true,
-    characters: [
-      { id: "c5", name: "Leafsong", class: "Druid", ilevel: 726, roles: ["Healer", "DPS"], log: 94, status: { M: "G", H: "Y", N: "G" } },
-    ],
-  },
-];
+const SERVER_ID = process.env.NEXT_PUBLIC_SERVER_ID || "980165146762674186";
 
 export default function AdminRunDetailsPage() {
   const params = useParams<{ runId: string }>();
   const runId = params?.runId ?? "unknown";
   const [difficulty, setDifficulty] = useState<Difficulty>("Mythic");
-  const [signups, setSignups] = useState<Signup[]>(SAMPLE_SIGNUPS);
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(signups[0]?.player.id ?? null);
+  const [signups, setSignups] = useState<Signup[]>([]);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState<SlotRole | "All">("All");
   const allClasses = useMemo(() => Array.from(new Set(signups.flatMap(s => s.characters.map(c => c.class)))).sort(), [signups]);
   const [classFilter, setClassFilter] = useState<string | "All">("All");
@@ -116,6 +84,39 @@ export default function AdminRunDetailsPage() {
     Healer: Array.from({ length: ROSTER_CAPACITY.Healer }, () => null),
     DPS: Array.from({ length: ROSTER_CAPACITY.DPS }, () => null),
   });
+
+  // Fetch signups and roster on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [signupsData, rosterData] = await Promise.all([
+          signupApi.list(SERVER_ID, runId),
+          rosterApi.get(SERVER_ID, runId),
+        ]);
+
+        // Map API signups to component format
+        const mappedSignups: Signup[] = signupsData.map((signup: any) => ({
+          player: { id: signup.user_id, name: signup.user_id }, // Use user_id as name fallback
+          signed: signup.signup_type === "MAIN",
+          backup: signup.signup_type === "BENCH",
+          characters: [], // Will be populated from character data if available
+        }));
+
+        setSignups(mappedSignups);
+        setSelectedPlayerId(mappedSignups[0]?.player.id ?? null);
+      } catch (err) {
+        toast.error("Failed to load run data");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (runId && runId !== "unknown") {
+      fetchData();
+    }
+  }, [runId]);
 
   const selectedSignup = useMemo(() => signups.find(s => s.player.id === selectedPlayerId) ?? null, [signups, selectedPlayerId]);
 

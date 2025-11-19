@@ -474,12 +474,12 @@ export default function AdminRunsIndexPage() {
                                 <Button size="icon" variant="ghost">⋯</Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => toast.message("Run duplicated (mock). ")}>
-                                  <Copy className="mr-2 h-4 w-4" /> Duplicate
-                                </DropdownMenuItem>
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem variant="destructive">
+                                    <DropdownMenuItem
+                                      variant="destructive"
+                                      onSelect={(e) => e.preventDefault()}
+                                    >
                                       <Trash2 className="mr-2 h-4 w-4" /> Delete
                                     </DropdownMenuItem>
                                   </AlertDialogTrigger>
