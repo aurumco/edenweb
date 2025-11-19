@@ -126,6 +126,7 @@ export interface RunInput {
   difficulty: "Mythic" | "Heroic" | "Normal";
   scheduled_at: string;
   roster_channel_id: string;
+  discord_channel_id?: string;
   embed_text?: string;
   capacity?: number;
 }

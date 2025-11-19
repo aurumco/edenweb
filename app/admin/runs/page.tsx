@@ -119,6 +119,7 @@ export default function AdminRunsIndexPage() {
         difficulty: data.difficulty,
         scheduled_at: data.scheduled_at,
         roster_channel_id: data.roster_channel_id,
+        discord_channel_id: data.roster_channel_id,
         embed_text: data.embed_text,
       });
       toast.success("Run created.");
@@ -196,122 +197,156 @@ export default function AdminRunsIndexPage() {
                 <Plus className="h-4 w-4" /> Create Run
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card">
+            <DialogContent className="bg-card max-w-3xl">
               <DialogHeader>
                 <DialogTitle>Create New Run</DialogTitle>
                 <DialogDescription>Set up a new run with all necessary details</DialogDescription>
               </DialogHeader>
-              <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit as any)}>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="grid gap-2">
-                    <Label htmlFor="title">Run Title</Label>
-                    <Input id="title" placeholder="e.g., Mythic+ 20 Key Night" value={form.watch("title")} onChange={(e) => form.setValue("title", e.target.value)} />
+              <form
+                className="grid gap-6 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1.1fr)] items-start"
+                onSubmit={form.handleSubmit(onSubmit as any)}
+              >
+                {/* Left column - main form fields */}
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="grid gap-2">
+                      <Label htmlFor="title">Run Title</Label>
+                      <Input
+                        id="title"
+                        placeholder="e.g., Mythic+ 20 Key Night"
+                        value={form.watch("title")}
+                        onChange={(e) => form.setValue("title", e.target.value)}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="difficulty">Difficulty</Label>
+                      <Select
+                        value={form.watch("difficulty")}
+                        onValueChange={(v) => form.setValue("difficulty", v as Difficulty)}
+                      >
+                        <SelectTrigger id="difficulty" className="w-full">
+                          <SelectValue placeholder="Select difficulty" />
+                        </SelectTrigger>
+                        <SelectContent className="min-w-[14rem]">
+                          {DIFFICULTIES.map((d) => (
+                            <SelectItem value={d} key={d}>
+                              {d}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="difficulty">Difficulty</Label>
-                    <Select value={form.watch("difficulty")} onValueChange={(v) => form.setValue("difficulty", v as Difficulty)}>
-                      <SelectTrigger id="difficulty" className="w-full sm:w-56">
-                        <SelectValue placeholder="Select difficulty" />
-                      </SelectTrigger>
-                      <SelectContent className="min-w-[14rem]">
-                        {DIFFICULTIES.map((d) => (
-                          <SelectItem value={d} key={d}>{d}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+
                   <div className="grid gap-2">
                     <Label htmlFor="scheduled_at">Scheduled</Label>
-                    <Popover open={scheduledOpen} onOpenChange={setScheduledOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="w-full justify-start text-left font-normal"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                          {form.watch("scheduled_at")
-                            ? format(new Date(form.watch("scheduled_at")), "dd MMM - HH:mm")
-                            : "DD Mon - HH:MM"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        className="w-[300px] p-3 bg-card border border-border/60 shadow-xl"
-                        align="start"
-                        side="top"
-                        sideOffset={12}
-                      >
-                        <div className="flex flex-col gap-3">
-                          <Calendar
-                            mode="single"
-                            selected={form.watch("scheduled_at") ? new Date(form.watch("scheduled_at")) : undefined}
-                            onSelect={(date) => {
-                              if (date) {
-                                const [hours, minutes] = (form.getValues("scheduled_time") || "20:00").split(":");
-                                date.setHours(Number(hours));
-                                date.setMinutes(Number(minutes));
-                                form.setValue("scheduled_at", date.toISOString(), { shouldValidate: true });
-                              } else {
-                                form.setValue("scheduled_at", "", { shouldValidate: true });
-                              }
-                            }}
-                          />
-                          <div className="grid gap-2">
-                            <Label htmlFor="scheduled_time" className="text-xs text-muted-foreground">
-                              Time
-                            </Label>
-                            <div className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm">
-                              <ClockIcon className="h-4 w-4 text-muted-foreground" />
-                              <input
-                                id="scheduled_time"
-                                type="time"
-                                className="flex-1 bg-transparent text-sm outline-none"
-                                value={form.watch("scheduled_time")}
-                                onChange={(e) => {
-                                  form.setValue("scheduled_time", e.target.value);
-                                  const current = form.watch("scheduled_at");
-                                  if (current) {
-                                    const next = new Date(current);
-                                    const [h, m] = e.target.value.split(":");
-                                    next.setHours(Number(h));
-                                    next.setMinutes(Number(m));
-                                    form.setValue("scheduled_at", next.toISOString(), { shouldValidate: true });
-                                  }
-                                }}
-                              />
-                            </div>
-                          </div>
-                          <div className="flex justify-end">
-                            <Button
-                              type="button"
-                              size="sm"
-                              className="px-4"
-                              onClick={() => {
-                                setScheduledOpen(false);
-                              }}
-                            >
-                              Apply
-                            </Button>
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                    <Input
+                      id="scheduled_at"
+                      readOnly
+                      placeholder="DD Mon - HH:MM"
+                      value={
+                        form.watch("scheduled_at")
+                          ? format(new Date(form.watch("scheduled_at")), "dd MMM - HH:mm")
+                          : ""
+                      }
+                    />
                   </div>
+
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="grid gap-2">
+                      <Label htmlFor="roster_channel_id">Roster Channel ID</Label>
+                      <Input
+                        id="roster_channel_id"
+                        placeholder="Channel ID for announcements"
+                        value={form.watch("roster_channel_id")}
+                        onChange={(e) => form.setValue("roster_channel_id", e.target.value)}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="capacity">Capacity</Label>
+                      <Input
+                        id="capacity"
+                        placeholder="e.g., 20"
+                        inputMode="numeric"
+                        value={form.watch("capacity")}
+                        onChange={(e) => form.setValue("capacity", e.target.value)}
+                      />
+                    </div>
+                  </div>
+
                   <div className="grid gap-2">
-                    <Label htmlFor="capacity">Capacity</Label>
-                    <Input id="capacity" placeholder="e.g., 20" inputMode="numeric" value={form.watch("capacity")} onChange={(e) => form.setValue("capacity", e.target.value)} />
+                    <Label htmlFor="embed_text">Embed Text</Label>
+                    <Textarea
+                      id="embed_text"
+                      placeholder="Message content for Discord embed"
+                      value={form.watch("embed_text")}
+                      onChange={(e) => form.setValue("embed_text", e.target.value)}
+                    />
+                  </div>
+
+                  <DialogFooter>
+                    <Button type="submit" disabled={!isValid}>
+                      Create
+                    </Button>
+                  </DialogFooter>
+                </div>
+
+                {/* Right column - schedule panel */}
+                <div className="hidden md:block rounded-2xl border border-border/60 bg-card/70 p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Schedule</p>
+                      <p className="text-xs text-muted-foreground">Pick date and time for this run.</p>
+                    </div>
+                    <div className="rounded-full bg-primary/10 p-2 text-primary">
+                      <CalendarIcon className="h-4 w-4" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Calendar
+                      mode="single"
+                      selected={form.watch("scheduled_at") ? new Date(form.watch("scheduled_at")) : undefined}
+                      onSelect={(date) => {
+                        if (date) {
+                          const [hours, minutes] = (form.getValues("scheduled_time") || "20:00").split(":");
+                          date.setHours(Number(hours));
+                          date.setMinutes(Number(minutes));
+                          form.setValue("scheduled_at", date.toISOString(), { shouldValidate: true });
+                        } else {
+                          form.setValue("scheduled_at", "", { shouldValidate: true });
+                        }
+                      }}
+                      className="rounded-xl border border-border/40 bg-background/40"
+                    />
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="scheduled_time" className="text-xs text-muted-foreground">
+                        Time
+                      </Label>
+                      <div className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm">
+                        <ClockIcon className="h-4 w-4 text-muted-foreground" />
+                        <input
+                          id="scheduled_time"
+                          type="time"
+                          className="flex-1 bg-transparent text-sm outline-none"
+                          value={form.watch("scheduled_time")}
+                          onChange={(e) => {
+                            form.setValue("scheduled_time", e.target.value);
+                            const current = form.watch("scheduled_at");
+                            if (current) {
+                              const next = new Date(current);
+                              const [h, m] = e.target.value.split(":");
+                              next.setHours(Number(h));
+                              next.setMinutes(Number(m));
+                              form.setValue("scheduled_at", next.toISOString(), { shouldValidate: true });
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="roster_channel_id">Roster Channel ID</Label>
-                  <Input id="roster_channel_id" placeholder="Channel ID for announcements" value={form.watch("roster_channel_id")} onChange={(e) => form.setValue("roster_channel_id", e.target.value)} />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="embed_text">Embed Text</Label>
-                  <Textarea id="embed_text" placeholder="Message content for Discord embed" value={form.watch("embed_text")} onChange={(e) => form.setValue("embed_text", e.target.value)} />
-                </div>
-                <DialogFooter>
-                  <Button type="submit" disabled={!isValid}>Create</Button>
-                </DialogFooter>
               </form>
             </DialogContent>
           </Dialog>
