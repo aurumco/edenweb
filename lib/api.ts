@@ -26,9 +26,11 @@ async function apiCall<T>(
       message: `API Error: ${response.status}`,
     };
 
-    try {
+try {
       const data = await response.json();
-      error.message = data.message || error.message;
+      if (data && typeof data === 'object' && 'message' in data) {
+        error.message = (data as any).message || error.message;
+      }
     } catch {
       // If response is not JSON, use default message
     }
