@@ -61,7 +61,8 @@ export default function ProfilePage() {
     return `${wallet.substring(0, 6)}...${wallet.substring(wallet.length - 4)}`;
   };
 
-  const reliabilityScore = profile?.stats.totalRuns && profile.stats.totalRuns > 0 ? 95 : 0;
+  const totalRuns = profile?.stats.totalRuns ?? 0;
+  const reliabilityScore = totalRuns > 0 ? 95 : 0;
 
   if (authLoading || loading) {
     return (
@@ -166,56 +167,60 @@ export default function ProfilePage() {
 
         {/* Financial Stats */}
         <div className="grid gap-4 md:grid-cols-3">
-          {/* Wallet Balance */}
-          <Card>
+          {[
+            {
+              title: "Wallet Balance",
+              icon: Wallet,
+              accent: "text-amber-400",
+              glow: "from-amber-500/15",
+              value: profile.finance.currentBalance,
+            },
+            {
+              title: "Pending Escrow",
+              icon: Clock,
+              accent: "text-sky-400",
+              glow: "from-sky-500/15",
+              value: profile.finance.pendingEscrow,
+            },
+          ].map((card) => (
+            <Card key={card.title} className="border border-border/60 bg-card/60 shadow-lg">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <span className={`rounded-full bg-gradient-to-br ${card.glow} to-transparent p-2 ${card.accent}`}>
+                    <card.icon className="h-4 w-4" />
+                  </span>
+                  {card.title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`text-3xl font-semibold ${card.accent}`}>
+                  {(card.value / 1000).toFixed(1)}K
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {card.value.toLocaleString()} USDT
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+
+          <Card className="border border-border/60 bg-card/60 shadow-lg">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Wallet className="h-4 w-4 text-yellow-500" />
-                Wallet Balance
+                <span className="rounded-full bg-gradient-to-br from-zinc-500/15 to-transparent p-2 text-muted-foreground">
+                  <Shield className="h-4 w-4" />
+                </span>
+                Wallet Address
               </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-yellow-500">
-                {(profile.finance.currentBalance / 1000).toFixed(1)}K
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {profile.finance.currentBalance.toLocaleString()} USDT
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Pending Escrow */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Clock className="h-4 w-4 text-blue-500" />
-                Pending Escrow
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-blue-500">
-                {(profile.finance.pendingEscrow / 1000).toFixed(1)}K
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {profile.finance.pendingEscrow.toLocaleString()} USDT
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Wallet Address */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Wallet Address</CardTitle>
             </CardHeader>
             <CardContent>
               {profile.user.wallet ? (
-                <div className="space-y-2">
-                  <p className="text-sm font-mono text-muted-foreground break-all">
+                <div className="space-y-3">
+                  <div className="rounded-lg border border-border/60 bg-muted/10 px-3 py-2 font-mono text-sm text-muted-foreground break-all">
                     {maskWallet(profile.user.wallet)}
-                  </p>
+                  </div>
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant="secondary"
                     className="w-full gap-1"
                     onClick={() => copyToClipboard(profile.user.wallet, "Wallet address")}
                   >
@@ -225,7 +230,7 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-500">
+                  <div className="flex items-center gap-2 text-sm text-amber-500">
                     <AlertCircle className="h-4 w-4" />
                     No Wallet Set
                   </div>

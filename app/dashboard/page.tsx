@@ -227,6 +227,7 @@ function PlayerDashboardContent() {
   }), [characters]);
 
   const handleToggleStatus = async (character: Character, nextChecked: boolean) => {
+    const previousStatus: "Available" | "Unavailable" = character.status ?? "Available";
     const nextStatus: "Available" | "Unavailable" = nextChecked ? "Available" : "Unavailable";
     setCharacters((prev) =>
       prev.map((c) => (c.id === character.id ? { ...c, status: nextStatus } : c))
@@ -237,9 +238,8 @@ function PlayerDashboardContent() {
     } catch (err) {
       toast.error("Failed to update status");
       console.error(err);
-      // revert on failure
       setCharacters((prev) =>
-        prev.map((c) => (c.id === character.id ? { ...c, status: character.status ?? "Available" } : c))
+        prev.map((c) => (c.id === character.id ? { ...c, status: previousStatus } : c))
       );
     }
   };
@@ -416,27 +416,26 @@ function PlayerDashboardContent() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-3">
+                            <Badge
+                              className="px-2 py-0.5 text-xs rounded-full"
+                              variant={c.status === "Unavailable" ? "destructive" : "success"}
+                            >
+                              {c.status === "Unavailable" ? "Unavailable" : "Available"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-3">
                               <Switch
                                 aria-label="Toggle availability"
                                 checked={c.status !== "Unavailable"}
                                 onCheckedChange={(checked) => handleToggleStatus(c, checked)}
                               />
-                              <Badge
-                                className="px-2 py-0.5 text-xs rounded-full"
-                                variant={c.status === "Unavailable" ? "destructive" : "success"}
-                              >
-                                {c.status === "Unavailable" ? "Unavailable" : "Available"}
-                              </Badge>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button size="icon" variant="ghost">⋯</Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <AlertDialog>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button size="icon" variant="ghost">⋯</Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <AlertDialog>
                                   <AlertDialogTrigger asChild>
                                     <DropdownMenuItem
                                       variant="destructive"
@@ -458,8 +457,9 @@ function PlayerDashboardContent() {
                                     </div>
                                   </AlertDialogContent>
                                 </AlertDialog>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))

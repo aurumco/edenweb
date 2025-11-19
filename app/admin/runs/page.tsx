@@ -65,6 +65,7 @@ export default function AdminRunsIndexPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [submittingRun, setSubmittingRun] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const pageSize = 10;
   const form = useForm<RunForm>({
     defaultValues: {
@@ -108,6 +109,35 @@ export default function AdminRunsIndexPage() {
       v.roster_channel_id.trim().length > 0
     );
   }, [form.watch()]);
+
+  const scheduledValue = form.watch("scheduled_at");
+  const scheduledLabel = scheduledValue ? format(new Date(scheduledValue), "dd MMM • HH:mm") : "Pick date & time";
+
+  const mergeDateAndTime = (date: Date, timeValue: string) => {
+    const [hours, minutes] = timeValue.split(":").map((val) => Number(val) || 0);
+    const merged = new Date(date);
+    merged.setHours(hours);
+    merged.setMinutes(minutes);
+    merged.setSeconds(0, 0);
+    return merged;
+  };
+
+  const handleDateSelect = (date?: Date) => {
+    if (!date) {
+      form.setValue("scheduled_at", "");
+      return;
+    }
+    const merged = mergeDateAndTime(date, form.getValues("scheduled_time") || "20:00");
+    form.setValue("scheduled_at", merged.toISOString());
+  };
+
+  const handleTimeChange = (value: string) => {
+    form.setValue("scheduled_time", value);
+    const current = form.getValues("scheduled_at");
+    if (!current) return;
+    const merged = mergeDateAndTime(new Date(current), value);
+    form.setValue("scheduled_at", merged.toISOString());
+  };
 
   async function onSubmit(data: RunForm) {
     try {
@@ -221,47 +251,32 @@ export default function AdminRunsIndexPage() {
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="scheduled_at">Scheduled Date</Label>
-                    <Popover>
+                    <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className="w-full justify-start text-left font-normal">
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {form.watch("scheduled_at") ? format(new Date(form.watch("scheduled_at")), "PPP") : "Pick a date"}
+                          <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                          {scheduledLabel}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[320px] p-3 bg-card" align="start" sideOffset={8}>
+                      <PopoverContent className="w-[320px] space-y-4 p-4 bg-card border border-border/60" align="start" sideOffset={8}>
                         <Calendar
                           mode="single"
-                          selected={form.watch("scheduled_at") ? new Date(form.watch("scheduled_at")) : undefined}
-                          onSelect={(date) => {
-                            if (date) {
-                              const [hours, minutes] = (form.getValues("scheduled_time") || "20:00").split(":");
-                              date.setHours(Number(hours));
-                              date.setMinutes(Number(minutes));
-                              form.setValue("scheduled_at", date.toISOString());
-                            } else {
-                              form.setValue("scheduled_at", "");
-                            }
-                          }}
+                          selected={scheduledValue ? new Date(scheduledValue) : undefined}
+                          onSelect={handleDateSelect}
+                          initialFocus
                         />
-                        <div className="mt-3 grid gap-2">
+                        <div className="grid gap-2">
                           <Label htmlFor="scheduled_time" className="text-xs text-muted-foreground">Time</Label>
                           <Input
                             id="scheduled_time"
                             type="time"
                             value={form.watch("scheduled_time")}
-                            onChange={(e) => {
-                              form.setValue("scheduled_time", e.target.value);
-                              const current = form.watch("scheduled_at");
-                              if (current) {
-                                const next = new Date(current);
-                                const [h, m] = e.target.value.split(":");
-                                next.setHours(Number(h));
-                                next.setMinutes(Number(m));
-                                form.setValue("scheduled_at", next.toISOString());
-                              }
-                            }}
+                            onChange={(e) => handleTimeChange(e.target.value)}
                           />
                         </div>
+                        <Button size="sm" className="w-full" onClick={() => setDatePickerOpen(false)}>
+                          Apply
+                        </Button>
                       </PopoverContent>
                     </Popover>
                   </div>
@@ -279,7 +294,7 @@ export default function AdminRunsIndexPage() {
                   <Textarea id="embed_text" placeholder="Message content for Discord embed" value={form.watch("embed_text")} onChange={(e) => form.setValue("embed_text", e.target.value)} />
                 </div>
                 <DialogFooter>
-                  <Button type="submit" disabled={!isValid}>Create Run</Button>
+                  <Button type="submit" disabled={!isValid}>Create</Button>
                 </DialogFooter>
               </form>
             </DialogContent>
