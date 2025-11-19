@@ -3,6 +3,14 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { authApi, AuthUser } from "@/lib/api";
 
+const buildAvatarUrl = (userData: AuthUser | null) => {
+  if (!userData?.avatar) return undefined;
+  if (userData.avatar.startsWith("http")) return userData.avatar;
+  const id = (userData as any).id || userData.userId;
+  if (!id) return undefined;
+  return `https://cdn.discordapp.com/avatars/${id}/${userData.avatar}.png`;
+};
+
 interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
@@ -22,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const fetchUser = async () => {
       try {
         const userData = await authApi.getMe();
-        setUser(userData);
+        setUser({ ...userData, avatar: buildAvatarUrl(userData) });
         setError(null);
       } catch (err) {
         setUser(null);

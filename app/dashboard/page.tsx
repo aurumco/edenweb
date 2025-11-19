@@ -128,7 +128,11 @@ function PlayerDashboardContent() {
     try {
       setLoadingChars(true);
       const data = await characterApi.list();
-      setCharacters(data);
+      const sanitizedData = data.map((c) => ({
+        ...c,
+        specs: typeof c.specs === "string" ? JSON.parse(c.specs) : c.specs || [],
+      }));
+      setCharacters(sanitizedData);
     } catch (err) {
       toast.error("Failed to load characters");
       console.error(err);
