@@ -203,17 +203,20 @@ export default function AdminRunsIndexPage() {
                 <Plus className="h-4 w-4" /> Create Run
               </Button>
             </DialogTrigger>
-            <DialogContent showCloseButton={false} className="bg-card w-full sm:max-w-2xl">
+            <DialogContent
+              showCloseButton={false}
+              className="bg-card w-full sm:max-w-3xl lg:max-w-[1100px]"
+            >
               <DialogHeader>
                 <DialogTitle>Create New Run</DialogTitle>
                 <DialogDescription>Set up a new run with all necessary details</DialogDescription>
               </DialogHeader>
               <form
-                className="grid gap-6 md:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] items-start"
+                className="grid gap-8 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] items-start"
                 onSubmit={form.handleSubmit(onSubmit as any)}
               >
                 {/* Left column - main form fields */}
-                <div className="space-y-4">
+                <div className="space-y-5">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="grid gap-2">
                       <Label htmlFor="title">Run Title</Label>
@@ -315,25 +318,27 @@ export default function AdminRunsIndexPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <Calendar
-                      mode="single"
-                      selected={form.watch("scheduled_at") ? new Date(form.watch("scheduled_at")) : undefined}
-                      onSelect={(date) => {
-                        if (date) {
-                          const hours = form.getValues("scheduled_hour") || "20";
-                          const minutes = form.getValues("scheduled_minute") || "00";
-                          date.setHours(Number(hours));
-                          date.setMinutes(Number(minutes));
-                          form.setValue("scheduled_at", date.toISOString(), { shouldValidate: true });
-                        } else {
-                          form.setValue("scheduled_at", "", { shouldValidate: true });
-                        }
-                      }}
-                      className="rounded-xl border border-border/40 bg-background/40"
-                    />
+                  <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-4">
+                    <div className="rounded-2xl border border-border/40 bg-background/40 p-2">
+                      <Calendar
+                        mode="single"
+                        selected={form.watch("scheduled_at") ? new Date(form.watch("scheduled_at")) : undefined}
+                        onSelect={(date) => {
+                          if (date) {
+                            const hours = form.getValues("scheduled_hour") || "20";
+                            const minutes = form.getValues("scheduled_minute") || "00";
+                            date.setHours(Number(hours));
+                            date.setMinutes(Number(minutes));
+                            form.setValue("scheduled_at", date.toISOString(), { shouldValidate: true });
+                          } else {
+                            form.setValue("scheduled_at", "", { shouldValidate: true });
+                          }
+                        }}
+                        className="w-full rounded-xl border border-border/30 bg-card/40"
+                      />
+                    </div>
 
-                    <div className="space-y-2">
+                    <div className="rounded-2xl border border-border/40 bg-background/40 p-3 space-y-3">
                       <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                         <ClockIcon className="h-4 w-4" />
                         <span>Select time</span>
