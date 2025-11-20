@@ -75,7 +75,7 @@ export default function AdminRunsIndexPage() {
       difficulty: "Mythic",
       scheduled_at: "",
       scheduled_hour: "20",
-      scheduled_minute: "01",
+      scheduled_minute: "00",
       roster_channel_id: "",
       capacity: "20",
       embed_text: "",
@@ -83,8 +83,8 @@ export default function AdminRunsIndexPage() {
     mode: "onChange",
   });
 
-  const hourOptions = useMemo(() => Array.from({ length: 24 }, (_, i) => String(i + 1).padStart(2, "0")), []);
-  const minuteOptions = useMemo(() => Array.from({ length: 60 }, (_, i) => String(i + 1).padStart(2, "0")), []);
+  const hourOptions = useMemo(() => Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")), []);
+  const minuteOptions = ["00", "15", "30", "45"];
 
   // Fetch runs on mount
   useEffect(() => {
@@ -142,7 +142,7 @@ export default function AdminRunsIndexPage() {
         difficulty: "Mythic",
         scheduled_at: "",
         scheduled_hour: "20",
-        scheduled_minute: "01",
+        scheduled_minute: "00",
         roster_channel_id: "",
         capacity: "20",
         embed_text: "",
@@ -317,137 +317,126 @@ export default function AdminRunsIndexPage() {
                 </div>
 
                 {/* Right column - schedule panel */}
-                <div className="rounded-2xl border border-border/60 bg-card/70 p-4 space-y-4">
-                  <div className="flex items-center justify-between">
+                <div className="rounded-2xl border border-border/60 bg-card/80 p-4 flex flex-col gap-4 max-h-[420px]">
+                  <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-medium">Schedule</p>
                       <p className="text-xs text-muted-foreground">Pick date and time for this run.</p>
                     </div>
-                  </div>
-
-                  {/* Tab buttons */}
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setScheduleTab("date")}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                        scheduleTab === "date"
-                          ? "bg-primary/20 text-primary"
-                          : "bg-muted text-muted-foreground hover:bg-muted/80"
-                      }`}
-                    >
-                      <CalendarIcon className="h-4 w-4" />
-                      <span className="text-sm font-medium">Date</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setScheduleTab("time")}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                        scheduleTab === "time"
-                          ? "bg-primary/20 text-primary"
-                          : "bg-muted text-muted-foreground hover:bg-muted/80"
-                      }`}
-                    >
-                      <ClockIcon className="h-4 w-4" />
-                      <span className="text-sm font-medium">Time</span>
-                    </button>
-                  </div>
-
-                  {/* Date tab */}
-                  {scheduleTab === "date" && (
-                    <div className="rounded-2xl border border-border/40 bg-background/40 p-3">
-                      <Calendar
-                        mode="single"
-                        selected={form.watch("scheduled_at") ? new Date(form.watch("scheduled_at")) : undefined}
-                        onSelect={(date) => {
-                          if (date) {
-                            const hours = form.getValues("scheduled_hour") || "20";
-                            const minutes = form.getValues("scheduled_minute") || "01";
-                            date.setHours(Number(hours));
-                            date.setMinutes(Number(minutes));
-                            form.setValue("scheduled_at", date.toISOString(), { shouldValidate: true });
-                          } else {
-                            form.setValue("scheduled_at", "", { shouldValidate: true });
-                          }
-                        }}
-                        className="w-full [&_.rdp]:w-full [&_.rdp_caption]:text-xs [&_.rdp_head_cell]:text-xs [&_.rdp_cell]:h-7 [&_.rdp_cell_button]:h-7 [&_.rdp_cell_button]:text-xs [&_.rdp_months]:gap-2"
-                      />
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setScheduleTab("time")}
+                        className={`flex h-8 w-8 items-center justify-center rounded-full border text-xs transition-colors ${
+                          scheduleTab === "time"
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "border-border/50 text-muted-foreground hover:bg-muted/80"
+                        }`}
+                      >
+                        <ClockIcon className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setScheduleTab("date")}
+                        className={`flex h-8 w-8 items-center justify-center rounded-full border text-xs transition-colors ${
+                          scheduleTab === "date"
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "border-border/50 text-muted-foreground hover:bg-muted/80"
+                        }`}
+                      >
+                        <CalendarIcon className="h-4 w-4" />
+                      </button>
                     </div>
-                  )}
+                  </div>
 
-                  {/* Time tab */}
-                  {scheduleTab === "time" && (
-                    <div className="rounded-2xl border border-border/40 bg-background/40 p-4 space-y-4">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="grid gap-2">
-                          <Label htmlFor="hour-select" className="text-xs font-medium text-muted-foreground">Hour</Label>
-                          <Select
-                            value={form.watch("scheduled_hour")}
-                            onValueChange={(value) => {
-                              form.setValue("scheduled_hour", value);
-                              const current = form.getValues("scheduled_at");
-                              if (current) {
-                                const next = new Date(current);
-                                next.setHours(Number(value));
-                                next.setMinutes(Number(form.getValues("scheduled_minute")));
-                                form.setValue("scheduled_at", next.toISOString(), { shouldValidate: true });
-                              }
-                            }}
-                          >
-                            <SelectTrigger id="hour-select" className="justify-between text-sm">
-                              <SelectValue placeholder="HH" />
-                            </SelectTrigger>
-                            <SelectContent className="max-h-64">
-                              {hourOptions.map((hour) => (
-                                <SelectItem key={hour} value={hour}>
-                                  {hour}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                  <div className="rounded-2xl border border-border/40 bg-background/40 p-3 flex-1 overflow-hidden">
+                    {scheduleTab === "date" ? (
+                      <div className="space-y-3">
+                        <Calendar
+                          mode="single"
+                          selected={form.watch("scheduled_at") ? new Date(form.watch("scheduled_at")) : undefined}
+                          onSelect={(date) => {
+                            if (date) {
+                              const hours = form.getValues("scheduled_hour") || "20";
+                              const minutes = form.getValues("scheduled_minute") || "00";
+                              date.setHours(Number(hours));
+                              date.setMinutes(Number(minutes));
+                              form.setValue("scheduled_at", date.toISOString(), { shouldValidate: true });
+                            } else {
+                              form.setValue("scheduled_at", "", { shouldValidate: true });
+                            }
+                          }}
+                          className="w-full rounded-xl bg-card/40"
+                        />
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="grid gap-1">
+                            <Label htmlFor="hour-select" className="text-xs font-medium">Hour</Label>
+                            <Select
+                              value={form.watch("scheduled_hour")}
+                              onValueChange={(value) => {
+                                form.setValue("scheduled_hour", value);
+                                const current = form.getValues("scheduled_at");
+                                if (current) {
+                                  const next = new Date(current);
+                                  next.setHours(Number(value));
+                                  next.setMinutes(Number(form.getValues("scheduled_minute")));
+                                  form.setValue("scheduled_at", next.toISOString(), { shouldValidate: true });
+                                }
+                              }}
+                            >
+                              <SelectTrigger id="hour-select" className="justify-between text-sm">
+                                <SelectValue placeholder="HH" />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-64">
+                                {hourOptions.map((hour) => (
+                                  <SelectItem key={hour} value={hour}>
+                                    {hour}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
 
-                        <div className="grid gap-2">
-                          <Label htmlFor="minute-select" className="text-xs font-medium text-muted-foreground">Minute</Label>
-                          <Select
-                            value={form.watch("scheduled_minute")}
-                            onValueChange={(value) => {
-                              form.setValue("scheduled_minute", value);
-                              const current = form.getValues("scheduled_at");
-                              if (current) {
-                                const next = new Date(current);
-                                next.setHours(Number(form.getValues("scheduled_hour")));
-                                next.setMinutes(Number(value));
-                                form.setValue("scheduled_at", next.toISOString(), { shouldValidate: true });
-                              }
-                            }}
-                          >
-                            <SelectTrigger id="minute-select" className="justify-between text-sm">
-                              <SelectValue placeholder="MM" />
-                            </SelectTrigger>
-                            <SelectContent className="max-h-64">
-                              {minuteOptions.map((minute) => (
-                                <SelectItem key={minute} value={minute}>
-                                  {minute}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <div className="grid gap-1">
+                            <Label htmlFor="minute-select" className="text-xs font-medium">Minute</Label>
+                            <Select
+                              value={form.watch("scheduled_minute")}
+                              onValueChange={(value) => {
+                                form.setValue("scheduled_minute", value);
+                                const current = form.getValues("scheduled_at");
+                                if (current) {
+                                  const next = new Date(current);
+                                  next.setHours(Number(form.getValues("scheduled_hour")));
+                                  next.setMinutes(Number(value));
+                                  form.setValue("scheduled_at", next.toISOString(), { shouldValidate: true });
+                                }
+                              }}
+                            >
+                              <SelectTrigger id="minute-select" className="justify-between text-sm">
+                                <SelectValue placeholder="MM" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {minuteOptions.map((minute) => (
+                                  <SelectItem key={minute} value={minute}>
+                                    {minute}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       </div>
+                    )}
+                  </div>
 
-                      {form.watch("scheduled_at") && (
-                        <div className="rounded-lg bg-primary/10 p-3 text-sm text-primary text-center">
-                          {format(new Date(form.watch("scheduled_at")), "HH:mm")}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Display selected datetime */}
                   {form.watch("scheduled_at") && (
-                    <div className="rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">
-                      <span className="font-medium text-foreground">{format(new Date(form.watch("scheduled_at")), "dd MMM yyyy, HH:mm")}</span>
+                    <div className="rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">
+                        {format(new Date(form.watch("scheduled_at")), "dd MMM yyyy, HH:mm")}
+                      </span>
                     </div>
                   )}
                 </div>
