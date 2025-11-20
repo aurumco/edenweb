@@ -75,7 +75,7 @@ export default function AdminRunsIndexPage() {
       difficulty: "Mythic",
       scheduled_at: "",
       scheduled_hour: "20",
-      scheduled_minute: "00",
+      scheduled_minute: "01",
       roster_channel_id: "",
       capacity: "20",
       embed_text: "",
@@ -83,8 +83,8 @@ export default function AdminRunsIndexPage() {
     mode: "onChange",
   });
 
-  const hourOptions = useMemo(() => Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")), []);
-  const minuteOptions = ["00", "15", "30", "45"];
+  const hourOptions = useMemo(() => Array.from({ length: 24 }, (_, i) => String(i + 1).padStart(2, "0")), []);
+  const minuteOptions = useMemo(() => Array.from({ length: 60 }, (_, i) => String(i + 1).padStart(2, "0")), []);
 
   // Fetch runs on mount
   useEffect(() => {
@@ -142,7 +142,7 @@ export default function AdminRunsIndexPage() {
         difficulty: "Mythic",
         scheduled_at: "",
         scheduled_hour: "20",
-        scheduled_minute: "00",
+        scheduled_minute: "01",
         roster_channel_id: "",
         capacity: "20",
         embed_text: "",
@@ -355,14 +355,14 @@ export default function AdminRunsIndexPage() {
 
                   {/* Date tab */}
                   {scheduleTab === "date" && (
-                    <div className="rounded-2xl border border-border/40 bg-background/40 p-4">
+                    <div className="rounded-2xl border border-border/40 bg-background/40 p-3">
                       <Calendar
                         mode="single"
                         selected={form.watch("scheduled_at") ? new Date(form.watch("scheduled_at")) : undefined}
                         onSelect={(date) => {
                           if (date) {
                             const hours = form.getValues("scheduled_hour") || "20";
-                            const minutes = form.getValues("scheduled_minute") || "00";
+                            const minutes = form.getValues("scheduled_minute") || "01";
                             date.setHours(Number(hours));
                             date.setMinutes(Number(minutes));
                             form.setValue("scheduled_at", date.toISOString(), { shouldValidate: true });
@@ -370,7 +370,7 @@ export default function AdminRunsIndexPage() {
                             form.setValue("scheduled_at", "", { shouldValidate: true });
                           }
                         }}
-                        className="w-full"
+                        className="w-full [&_.rdp]:w-full [&_.rdp_caption]:text-xs [&_.rdp_head_cell]:text-xs [&_.rdp_cell]:h-7 [&_.rdp_cell_button]:h-7 [&_.rdp_cell_button]:text-xs [&_.rdp_months]:gap-2"
                       />
                     </div>
                   )}
@@ -378,9 +378,9 @@ export default function AdminRunsIndexPage() {
                   {/* Time tab */}
                   {scheduleTab === "time" && (
                     <div className="rounded-2xl border border-border/40 bg-background/40 p-4 space-y-4">
-                      <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
                         <div className="grid gap-2">
-                          <Label htmlFor="hour-select" className="text-sm">Hour</Label>
+                          <Label htmlFor="hour-select" className="text-xs font-medium text-muted-foreground">Hour</Label>
                           <Select
                             value={form.watch("scheduled_hour")}
                             onValueChange={(value) => {
@@ -394,13 +394,13 @@ export default function AdminRunsIndexPage() {
                               }
                             }}
                           >
-                            <SelectTrigger id="hour-select" className="justify-between">
-                              <SelectValue placeholder="Select hour" />
+                            <SelectTrigger id="hour-select" className="justify-between text-sm">
+                              <SelectValue placeholder="HH" />
                             </SelectTrigger>
                             <SelectContent className="max-h-64">
                               {hourOptions.map((hour) => (
                                 <SelectItem key={hour} value={hour}>
-                                  {hour}:00
+                                  {hour}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -408,7 +408,7 @@ export default function AdminRunsIndexPage() {
                         </div>
 
                         <div className="grid gap-2">
-                          <Label htmlFor="minute-select" className="text-sm">Minute</Label>
+                          <Label htmlFor="minute-select" className="text-xs font-medium text-muted-foreground">Minute</Label>
                           <Select
                             value={form.watch("scheduled_minute")}
                             onValueChange={(value) => {
@@ -422,13 +422,13 @@ export default function AdminRunsIndexPage() {
                               }
                             }}
                           >
-                            <SelectTrigger id="minute-select" className="justify-between">
-                              <SelectValue placeholder="Select minute" />
+                            <SelectTrigger id="minute-select" className="justify-between text-sm">
+                              <SelectValue placeholder="MM" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="max-h-64">
                               {minuteOptions.map((minute) => (
                                 <SelectItem key={minute} value={minute}>
-                                  :{minute}
+                                  {minute}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -437,8 +437,8 @@ export default function AdminRunsIndexPage() {
                       </div>
 
                       {form.watch("scheduled_at") && (
-                        <div className="rounded-lg bg-primary/10 p-3 text-sm text-primary">
-                          Selected: {format(new Date(form.watch("scheduled_at")), "dd MMM yyyy, HH:mm")}
+                        <div className="rounded-lg bg-primary/10 p-3 text-sm text-primary text-center">
+                          {format(new Date(form.watch("scheduled_at")), "HH:mm")}
                         </div>
                       )}
                     </div>
