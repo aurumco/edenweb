@@ -349,9 +349,9 @@ export default function AdminRunsIndexPage() {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-border/40 bg-background/40 p-3 flex-1 overflow-hidden">
+                  <div className="rounded-2xl border border-border/40 bg-background/40 p-3 flex-1 overflow-y-auto">
                     {scheduleTab === "date" ? (
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         <Calendar
                           mode="single"
                           selected={form.watch("scheduled_at") ? new Date(form.watch("scheduled_at")) : undefined}
@@ -366,7 +366,7 @@ export default function AdminRunsIndexPage() {
                               form.setValue("scheduled_at", "", { shouldValidate: true });
                             }
                           }}
-                          className="w-full rounded-xl bg-card/40 text-sm [&_.rdp-caption_label]:text-sm [&_.rdp-day]:h-8 [&_.rdp-day]:w-8 [&_.rdp-day_label]:text-xs [&_.rdp-head_cell]:text-[10px]"
+                          className="w-full rounded-lg bg-card/40 [&_.rdp]:w-full [&_.rdp-caption]:pb-2 [&_.rdp-caption_label]:text-xs [&_.rdp-head_cell]:text-[11px] [&_.rdp-head_cell]:py-1 [&_.rdp-cell]:p-0 [&_.rdp-day]:h-7 [&_.rdp-day]:w-full [&_.rdp-day]:rounded-sm [&_.rdp-day]:text-xs"
                         />
                       </div>
                     ) : (
