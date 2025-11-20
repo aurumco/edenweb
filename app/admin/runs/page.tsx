@@ -366,7 +366,7 @@ export default function AdminRunsIndexPage() {
                               form.setValue("scheduled_at", "", { shouldValidate: true });
                             }
                           }}
-                          className="mx-auto w-full max-w-sm rounded-xl bg-card/40 text-sm [&_.rdp-caption_label]:text-sm [&_.rdp-day]:h-8 [&_.rdp-day]:w-8 [&_.rdp-day_label]:text-xs [&_.rdp-head_cell]:text-[10px]"
+                          className="w-full rounded-xl bg-card/40 text-sm [&_.rdp-caption_label]:text-sm [&_.rdp-day]:h-8 [&_.rdp-day]:w-8 [&_.rdp-day_label]:text-xs [&_.rdp-head_cell]:text-[10px]"
                         />
                       </div>
                     ) : (
