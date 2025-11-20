@@ -317,7 +317,7 @@ export default function AdminRunsIndexPage() {
                 </div>
 
                 {/* Right column - schedule panel */}
-                <div className="rounded-2xl border border-border/60 bg-card/80 p-4 flex flex-col gap-4 max-h-[420px]">
+                <div className="rounded-2xl border border-border/60 bg-card/80 p-4 flex flex-col gap-4 max-h-[380px]">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-medium">Schedule</p>
@@ -366,12 +366,12 @@ export default function AdminRunsIndexPage() {
                               form.setValue("scheduled_at", "", { shouldValidate: true });
                             }
                           }}
-                          className="w-full rounded-xl bg-card/40"
+                          className="mx-auto w-full max-w-sm rounded-xl bg-card/40 text-sm [&_.rdp-caption_label]:text-sm [&_.rdp-day]:h-8 [&_.rdp-day]:w-8 [&_.rdp-day_label]:text-xs [&_.rdp-head_cell]:text-[10px]"
                         />
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid w-full grid-cols-2 gap-3">
                           <div className="grid gap-1">
                             <Label htmlFor="hour-select" className="text-xs font-medium">Hour</Label>
                             <Select
@@ -387,7 +387,7 @@ export default function AdminRunsIndexPage() {
                                 }
                               }}
                             >
-                              <SelectTrigger id="hour-select" className="justify-between text-sm">
+                              <SelectTrigger id="hour-select" className="w-full justify-between text-sm">
                                 <SelectValue placeholder="HH" />
                               </SelectTrigger>
                               <SelectContent className="max-h-64">
@@ -415,7 +415,7 @@ export default function AdminRunsIndexPage() {
                                 }
                               }}
                             >
-                              <SelectTrigger id="minute-select" className="justify-between text-sm">
+                              <SelectTrigger id="minute-select" className="w-full justify-between text-sm">
                                 <SelectValue placeholder="MM" />
                               </SelectTrigger>
                               <SelectContent>
