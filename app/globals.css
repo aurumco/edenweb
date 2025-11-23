@@ -2,55 +2,73 @@
 @import "tw-animate-css";
 
 :root {
-  --background: #090909;
-  --foreground: #e4e4e7;
-  --muted: #1a1a1a;
-  --muted-foreground: #a1a1aa;
-  --card: #141414;
-  --card-foreground: #e4e4e7;
-  --popover: #1a1a1a;
-  --popover-foreground: #e4e4e7;
-  --primary: #fb923c;
-  --primary-foreground: #0a0a0a;
-  --secondary: #1f1f1f;
-  --secondary-foreground: #e4e4e7;
-  --accent: #232323;
-  --accent-foreground: #e4e4e7;
-  --destructive: #f12929;
-  --destructive-foreground: #fef2f2;
-  --border: #2a2a2a;
-  --input: #232323;
-  --ring: #fb923c;
-  --radius: 0.75rem;
+  /* Darker background for high contrast with cards */
+  --background: #09090b; /* Zinc 950 */
+  --foreground: #fafafa; /* Zinc 50 */
+
+  /* Lighter card background for "boxy" feel */
+  --card: #18181b;       /* Zinc 900 */
+  --card-foreground: #fafafa;
+
+  --popover: #18181b;    /* Match card */
+  --popover-foreground: #fafafa;
+
+  /* Vibrant Orange */
+  --primary: #f97316;    /* Orange 500 */
+  --primary-foreground: #fafafa;
+
+  --secondary: #27272a;  /* Zinc 800 */
+  --secondary-foreground: #fafafa;
+
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa; /* Zinc 400 */
+
+  --accent: #27272a;
+  --accent-foreground: #fafafa;
+
+  --destructive: #7f1d1d; /* Red 900 */
+  --destructive-foreground: #fafafa;
+
+  --border: #27272a;      /* Visible border */
+  --input: #27272a;
+  --ring: #f97316;
+
+  --radius: 0.75rem;      /* More rounded */
 }
 
 html.light {
-  --background: #f5f5f5;
-  --foreground: #1a1a1a;
-  --muted: #e5e5e5;
-  --muted-foreground: #5a5a5a;
+  --background: #ffffff;
+  --foreground: #09090b;
+
   --card: #ffffff;
-  --card-foreground: #1a1a1a;
+  --card-foreground: #09090b;
+
   --popover: #ffffff;
-  --popover-foreground: #1a1a1a;
-  --primary: #fb923c;
-  --primary-foreground: #ffffff;
-  --secondary: #f0f0f0;
-  --secondary-foreground: #1a1a1a;
-  --accent: #e8e8e8;
-  --accent-foreground: #1a1a1a;
-  --destructive: #d62424;
-  --destructive-foreground: #ffffff;
-  --border: #d5d5d5;
-  --input: #e5e5e5;
-  --ring: #fb923c;
+  --popover-foreground: #09090b;
+
+  --primary: #f97316;
+  --primary-foreground: #fafafa;
+
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+
+  --accent: #f4f4f5;
+  --accent-foreground: #18181b;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #fafafa;
+
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #f97316;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -59,6 +77,8 @@ html.light {
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
@@ -66,37 +86,40 @@ html.light {
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
   --radius: var(--radius);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Smooth transitions for common containers */
-[data-slot="card"], [data-slot="tabs-content"], [data-slot="dropdown-menu-content"] {
-  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
-}
-
-/* Minimal themed scrollbars */
 * {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  border-color: var(--border);
 }
 
-*::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Minimal Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
-*::-webkit-scrollbar-thumb {
-  background-color: var(--border);
-  border-radius: 9999px;
+
+::-webkit-scrollbar-track {
+  background: transparent;
 }
-*::-webkit-scrollbar-thumb:hover {
-  background-color: var(--accent);
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
 }

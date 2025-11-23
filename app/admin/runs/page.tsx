@@ -30,7 +30,6 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Plus, Calendar as CalendarIcon, Clock as ClockIcon, Copy, FileDown, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -51,8 +50,11 @@ type RunForm = {
   scheduled_hour: string;
   scheduled_minute: string;
   roster_channel_id: string;
+  discord_channel_id: string;
   embed_text?: string;
-  capacity?: string;
+  tank_capacity: string;
+  healer_capacity: string;
+  dps_capacity: string;
 };
 
 const SERVER_ID = process.env.NEXT_PUBLIC_SERVER_ID || "980165146762674186";
@@ -62,11 +64,10 @@ export default function AdminRunsIndexPage() {
   const [runs, setRuns] = useState<Run[]>([]);
   const [search, setSearch] = useState("");
   const [filterDifficulty, setFilterDifficulty] = useState<Difficulty | "All">("All");
-  const [filterStatus, setFilterStatus] = useState<"Pending" | "Active" | "Completed" | "All">("All");
+  const [filterStatus, setFilterStatus] = useState<"PENDING" | "ACTIVE" | "COMPLETED" | "All">("All");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [submittingRun, setSubmittingRun] = useState(false);
-  const [scheduledOpen, setScheduledOpen] = useState(false);
   const [scheduleTab, setScheduleTab] = useState<"date" | "time">("date");
   const pageSize = 10;
   const form = useForm<RunForm>({
@@ -77,7 +78,10 @@ export default function AdminRunsIndexPage() {
       scheduled_hour: "20",
       scheduled_minute: "00",
       roster_channel_id: "",
-      capacity: "20",
+      discord_channel_id: "",
+      tank_capacity: "2",
+      healer_capacity: "4",
+      dps_capacity: "14",
       embed_text: "",
     },
     mode: "onChange",
@@ -112,7 +116,8 @@ export default function AdminRunsIndexPage() {
       v.title.trim().length > 2 &&
       Boolean(v.difficulty) &&
       Boolean(v.scheduled_at) &&
-      v.roster_channel_id.trim().length > 0
+      v.roster_channel_id.trim().length > 0 &&
+      v.discord_channel_id.trim().length > 0
     );
   }, [form.watch()]);
 
@@ -133,8 +138,11 @@ export default function AdminRunsIndexPage() {
         difficulty: data.difficulty,
         scheduled_at: scheduledIso,
         roster_channel_id: data.roster_channel_id,
-        discord_channel_id: data.roster_channel_id,
-        embed_text: data.embed_text,
+        discord_channel_id: data.discord_channel_id,
+        embed_text: data.embed_text || "",
+        tank_capacity: Number(data.tank_capacity),
+        healer_capacity: Number(data.healer_capacity),
+        dps_capacity: Number(data.dps_capacity),
       });
       toast.success("Run created.");
       form.reset({
@@ -144,7 +152,10 @@ export default function AdminRunsIndexPage() {
         scheduled_hour: "20",
         scheduled_minute: "00",
         roster_channel_id: "",
-        capacity: "20",
+        discord_channel_id: "",
+        tank_capacity: "2",
+        healer_capacity: "4",
+        dps_capacity: "14",
         embed_text: "",
       });
       setScheduleTab("date");
@@ -156,6 +167,17 @@ export default function AdminRunsIndexPage() {
       setSubmittingRun(false);
     }
   }
+
+  const deleteRun = async (runId: string) => {
+    try {
+      await runApi.delete(runId);
+      setRuns((prev) => prev.filter((x) => x.id !== runId));
+      toast.success("Run deleted.");
+    } catch (err) {
+      toast.error("Failed to delete run");
+      console.error(err);
+    }
+  };
 
   const formatUTC = (iso: string) => {
     const date = new Date(iso);
@@ -181,11 +203,11 @@ export default function AdminRunsIndexPage() {
   }, [filteredRuns, page]);
 
   const stats = useMemo(() => {
-    const active = runs.filter((r) => r.status === "Active").length;
-    const pending = runs.filter((r) => r.status === "Pending").length;
-    const completed = runs.filter((r) => r.status === "Completed").length;
-    const capacity = runs.reduce((acc, r) => acc + r.capacity, 0);
-    return { active, pending, completed, capacity };
+    const active = runs.filter((r) => r.status === "ACTIVE").length;
+    const pending = runs.filter((r) => r.status === "PENDING").length;
+    const completed = runs.filter((r) => r.status === "COMPLETED").length;
+    const participants = runs.reduce((acc, r) => acc + (r.tank_capacity + r.healer_capacity + r.dps_capacity), 0); // Roughly capacity
+    return { active, pending, completed, participants };
   }, [runs]);
 
   useEffect(() => {
@@ -282,13 +304,45 @@ export default function AdminRunsIndexPage() {
                       />
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="capacity">Capacity</Label>
+                      <Label htmlFor="discord_channel_id">Discord Channel ID</Label>
                       <Input
-                        id="capacity"
-                        placeholder="e.g., 20"
+                        id="discord_channel_id"
+                        placeholder="Channel ID for signup embeds"
+                        value={form.watch("discord_channel_id")}
+                        onChange={(e) => form.setValue("discord_channel_id", e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                     <div className="grid gap-2">
+                      <Label htmlFor="tank_capacity">Tanks</Label>
+                      <Input
+                        id="tank_capacity"
+                        placeholder="2"
                         inputMode="numeric"
-                        value={form.watch("capacity")}
-                        onChange={(e) => form.setValue("capacity", e.target.value)}
+                        value={form.watch("tank_capacity")}
+                        onChange={(e) => form.setValue("tank_capacity", e.target.value)}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="healer_capacity">Healers</Label>
+                      <Input
+                        id="healer_capacity"
+                        placeholder="4"
+                        inputMode="numeric"
+                        value={form.watch("healer_capacity")}
+                        onChange={(e) => form.setValue("healer_capacity", e.target.value)}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="dps_capacity">DPS</Label>
+                      <Input
+                        id="dps_capacity"
+                        placeholder="14"
+                        inputMode="numeric"
+                        value={form.watch("dps_capacity")}
+                        onChange={(e) => form.setValue("dps_capacity", e.target.value)}
                       />
                     </div>
                   </div>
@@ -478,10 +532,10 @@ export default function AdminRunsIndexPage() {
           </div>
           <div className="rounded-2xl bg-card p-4">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-2xl font-bold text-foreground">12</div>
-              <div className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-md">Players</div>
+              <div className="text-2xl font-bold text-foreground">{stats.participants}</div>
+              <div className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-md">Capacity</div>
             </div>
-            <div className="text-xs text-muted-foreground">Total</div>
+            <div className="text-xs text-muted-foreground">Total Slots</div>
           </div>
           </>
           )}
@@ -507,9 +561,9 @@ export default function AdminRunsIndexPage() {
                   <SelectTrigger className="w-full sm:w-32"><SelectValue placeholder="Status" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="All">All</SelectItem>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
+                    <SelectItem value="PENDING">Pending</SelectItem>
+                    <SelectItem value="ACTIVE">Active</SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -555,7 +609,7 @@ export default function AdminRunsIndexPage() {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{formatUTC(r.scheduled_at)}</TableCell>
                         <TableCell className="hidden md:table-cell">
-                          <Badge className="px-2 py-0.5 text-xs rounded-full" variant={r.status === "Active" ? "success" : r.status === "Pending" ? "warning" : "neutral"}>{r.status}</Badge>
+                          <Badge className="px-2 py-0.5 text-xs rounded-full" variant={r.status === "ACTIVE" ? "success" : r.status === "PENDING" ? "warning" : "neutral"}>{r.status}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="inline-flex items-center gap-2">
@@ -585,7 +639,7 @@ export default function AdminRunsIndexPage() {
                                     </AlertDialogHeader>
                                     <div className="flex justify-end gap-2">
                                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => { setRuns((prev) => prev.filter((x) => x.id !== r.id)); toast.success("Run deleted."); }}>Delete</AlertDialogAction>
+                                      <AlertDialogAction onClick={() => deleteRun(r.id)}>Delete</AlertDialogAction>
                                     </div>
                                   </AlertDialogContent>
                                 </AlertDialog>
