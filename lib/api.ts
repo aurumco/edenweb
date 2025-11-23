@@ -106,7 +106,7 @@ export interface Character {
   ilevel: number;
   specs: CharacterSpec[];
   // wcl_logs?: number; // Not in documented POST/GET response explicitly but implied by scenario "Log(int)"
-  status?: "AVAILABLE" | "UNAVAILABLE";
+  status?: "AVAILABLE" | "UNAVAILABLE"; 
 }
 
 export const characterApi = {
@@ -120,7 +120,7 @@ export const characterApi = {
   // but implied by "Edit character" requirement. Using PATCH /api/characters/:id based on standard patterns.
   update: (id: string, data: Partial<CharacterInput>) =>
     apiCall<Character>(`/api/characters/${id}`, {
-      method: "PATCH",
+      method: "PATCH", 
       body: JSON.stringify(data),
     }),
   updateStatus: (id: string, status: "AVAILABLE" | "UNAVAILABLE") =>
@@ -179,12 +179,12 @@ export const runApi = {
     }),
   delete: (runId: string) =>
     apiCall<void>(`/api/runs/${runId}`, { method: "DELETE" }),
-  updateStatus: (runId: string, status: string) =>
+  updateStatus: (runId: string, status: string) => 
     apiCall<Run>(`/api/runs/${runId}/status`, {
         method: "PATCH",
         body: JSON.stringify({ status })
     }),
-  announce: (runId: string) =>
+  announce: (runId: string) => 
       apiCall<void>(`/api/runs/${runId}/announce`, {
           method: "POST"
       })
@@ -199,10 +199,13 @@ export interface Signup {
   id: string;
   user_id: string;
   run_id: string;
-  character_id: string; // Probably returned?
+  // character_id: string; // Removed based on new doc (signups are per user with list of characters)
   signup_type: "MAIN" | "BENCH" | "ALT" | "DECLINE";
   created_at: string;
-  // User/Character details might be expanded or separate
+  // Added based on new documentation
+  status: string;
+  display_name?: string;
+  available_characters: Character[];
 }
 
 export const signupApi = {
@@ -221,13 +224,13 @@ export interface RosterSlot {
   // id: string; // Slot ID? Or is it user_id/char_id?
   user_id: string;
   character_id: string;
-  assigned_role: "Tank" | "Healer" | "DPS";
+  assigned_role: "TANK" | "HEALER" | "DPS"; // Updated to uppercase as per new doc
 }
 
 export interface RosterInput {
   user_id: string;
   character_id: string;
-  assigned_role: "Tank" | "Healer" | "DPS";
+  assigned_role: "TANK" | "HEALER" | "DPS"; // Updated to uppercase
 }
 
 export const rosterApi = {

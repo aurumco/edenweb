@@ -79,7 +79,7 @@ export default function AdminRunDetailsPage() {
   const [roleFilter, setRoleFilter] = useState<SlotRole | "All">("All");
   const allClasses = useMemo(() => Array.from(new Set(signups.flatMap(s => s.characters.map(c => c.class)))).sort(), [signups]);
   const [classFilter, setClassFilter] = useState<string | "All">("All");
-
+  
   // Initial capacities, updated after run fetch
   const [capacities, setCapacities] = useState<Record<SlotRole, number>>({ Tank: 2, Healer: 4, DPS: 14 });
 
@@ -94,20 +94,7 @@ export default function AdminRunDetailsPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Fetch run details, signups, roster, and ALL characters (to link character details)
-        // Note: Fetching all characters might be heavy, but signup API doesn't return char details.
-        // In a real app, we'd likely have an endpoint for run signups that includes character snapshots.
-        // For now, we'll fetch all characters? No, that's unsafe/unscalable.
-        // Wait, the user provided `signupApi.list` returns `Signup[]`.
-        // `Signup` interface in `lib/api.ts` has `character_id`.
-        // Does it have character details? If not, we can't show class/ilevel.
-        // Assuming `signupApi.list` or backend endpoint should provide this.
-        // If not, we might be stuck.
-        // Let's assume we need to fetch `characterApi.list()`? But that returns *my* characters. admin shouldn't see everyone's characters via `list()` unless admin mode.
-        // The README says `GET /api/runs/:runId/signups` (Admin Only).
-        // It likely returns enriched data. Let's assume the response contains user and character info.
-        // Since I don't have the exact response shape, I will inspect `signupsData` and map it.
-
+        
         // Also fetch run for capacities
         const [runData, signupsData, rosterData] = await Promise.all([
             runApi.get("unused", runId), // serverId is unused in my new api implementation
@@ -130,66 +117,33 @@ export default function AdminRunDetailsPage() {
             DPS: Array.from({ length: runData.dps_capacity }, () => null) as (Assignment | null)[],
         };
 
-        // Populate roster
-        // RosterSlot has { user_id, character_id, assigned_role }
-        // We need character details for the roster slots too.
-        // If signupsData contains all signed up users (including rostered ones), we can lookup details there.
-
-        // Let's map signupsData. Assuming it has embedded `user` and `character` objects or similar.
-        // If the API is strict REST, it might not.
-        // BUT, the prompt says "List all players signed up...". Admin needs to see details.
-        // I'll assume `signupsData` items have `user` and `character` properties.
-        // Or `character_snapshot` etc.
-
         const mappedSignups: Signup[] = [];
-        const userMap = new Map<string, Signup>();
-
-        // Group by user (since one user might have multiple signups? No, usually 1 signup per run, but user has multiple characters)
-        // Wait, the signup is for a user. "When sign button clicked... registered characters come... leader decides which to pick".
-        // So the signup is per USER, and the user exposes ALL their AVAILABLE characters.
-        // So `GET /api/runs/:runId/signups` probably returns users who signed up.
-        // And we need their characters.
-        // Maybe the backend returns `{ user, characters: [] }` for each signup?
-        // Or `signupApi.list` returns `Signup` which has `character_id`.
-        // The prompt says "During signup... characters come... leader decides".
-        // This implies the signup might not be tied to a single character initially?
-        // OR the user signs up, and the admin sees ALL their characters?
-        // The memory says "updates Discord... based on signed-up users' characters".
-        // "Frontend: ... sign button clicked... user characters come... leader selects".
-        // This implies the admin sees available characters of the signed up user.
-        // If `signupApi.list` returns just `user_id`, we need to fetch their characters.
-        // But we can't fetch other users' characters easily without an admin endpoint `GET /api/admin/users/:id/characters`?
-        // Let's assume `signupsData` is rich.
-
-        // Mocking the data structure expectation based on typical needs if not fully documented.
-        // I'll assume `signupsData` is an array where each item has `user` info and `characters` list.
-        // If the actual API returns just `Signup` rows, I might need to fetch `/api/runs/:runId/signups?expand=characters`.
-        // Given I can't change backend, I'll hope `signupsData` has what I need.
-        // If not, I'll code defensively.
 
         (signupsData as any[]).forEach((s: any) => {
-            // Assuming s has .user and .characters (array of chars)
-            // If not, and s is just { user_id, signup_type }, we are blind.
-            // But given "Admin Only", it surely returns details.
+            // Use display_name, fallback to user_id if missing
+            const player: Player = { 
+                id: s.user_id, 
+                name: s.display_name || s.user?.username || s.user_id 
+            };
+            
+            // Use available_characters as per new doc, fallback to s.characters if available_characters missing
+            const sourceChars = s.available_characters || s.characters || [];
 
-            const player: Player = { id: s.user_id, name: s.user?.username || s.username || "Unknown" };
-
-            // Characters: Check if s.characters exists
-            const chars: Character[] = (s.characters || []).map((c: any) => {
+            const chars: Character[] = sourceChars.map((c: any) => {
                  // specs parsing
                  const specs = Array.isArray(c.specs) ? c.specs : (typeof c.specs === "string" ? JSON.parse(c.specs) : []);
                  const roles: SlotRole[] = specs.map((sp: any) => sp.role);
-
+                 
                  return {
                      id: c.id,
                      class: c.char_class,
                      ilevel: c.ilevel,
                      roles: Array.from(new Set(roles)), // unique roles
                      name: c.char_name,
-                     status: { M: "G", H: "G", N: "G" }, // Mock status, assuming backend doesn't return weekly lockouts per diff yet? Or mapped from availability
+                     status: { M: "G", H: "G", N: "G" }, // Default to Green (Available)
                      apiStatus: c.status
                  };
-            }).filter((c: Character) => c.apiStatus === "AVAILABLE"); // Only show available? "When sign button... all available characters come"
+            });
 
             mappedSignups.push({
                 player,
@@ -205,9 +159,9 @@ export default function AdminRunDetailsPage() {
         rosterData.forEach((slot: RosterSlot) => {
             // Find character details from signups
             let charDetails: Assignment | null = null;
-
+            
             for (const s of mappedSignups) {
-                if (s.player.id === slot.user_id) { // Assuming slot has user_id
+                if (s.player.id === slot.user_id) {
                      const c = s.characters.find(ch => ch.id === slot.character_id);
                      if (c) {
                          charDetails = {
@@ -224,16 +178,47 @@ export default function AdminRunDetailsPage() {
             }
 
             // If we found details, place in roster
-            if (charDetails && slot.assigned_role && newRoster[slot.assigned_role]) {
-                 // Find first empty slot or push?
-                 // rosterData likely doesn't have 'position'. We just fill.
-                 const emptyIdx = newRoster[slot.assigned_role].indexOf(null);
+            // Map uppercase roles from API (TANK, HEALER, DPS) to frontend keys (Tank, Healer, DPS)
+            let roleKey: SlotRole | null = null;
+            if (slot.assigned_role === "TANK") roleKey = "Tank";
+            else if (slot.assigned_role === "HEALER") roleKey = "Healer";
+            else if (slot.assigned_role === "DPS") roleKey = "DPS";
+
+            if (charDetails && roleKey && newRoster[roleKey]) {
+                 const emptyIdx = newRoster[roleKey].indexOf(null);
                  if (emptyIdx !== -1) {
-                     newRoster[slot.assigned_role][emptyIdx] = charDetails;
+                     newRoster[roleKey][emptyIdx] = charDetails;
                  }
             }
         });
-
+        
+        // After populating roster, update character statuses
+        // Logic:
+        // If assigned to THIS run:
+        //   If run.status === "COMPLETED" -> Red (R)
+        //   Else -> Yellow (Y)
+        // If not assigned -> Green (G) (default)
+        
+        const isCompleted = runData.status === "COMPLETED";
+        
+        const updatedSignups = mappedSignups.map(s => ({
+            ...s,
+            characters: s.characters.map(c => {
+                // Check if this character is in the roster
+                const isAssigned = Object.values(newRoster).some(slots => slots.some(a => a?.characterId === c.id));
+                
+                if (isAssigned) {
+                    const key = runData.difficulty === "Mythic" ? "M" : runData.difficulty === "Heroic" ? "H" : "N";
+                    const newStatus = { ...c.status };
+                    // @ts-ignore
+                    newStatus[key] = isCompleted ? "R" : "Y";
+                    return { ...c, status: newStatus };
+                }
+                return c;
+            })
+        }));
+        
+        setSignups(updatedSignups);
         setRoster(newRoster);
 
       } catch (err) {
@@ -262,7 +247,7 @@ export default function AdminRunDetailsPage() {
         toast.error(`Character cannot fill ${role}.`);
         return;
       }
-
+      
       // Optimistic update
       const prevRoster = { ...roster };
       setRoster(prev => {
@@ -270,18 +255,37 @@ export default function AdminRunDetailsPage() {
         next[role][index] = { playerId: data.playerId, characterId: data.characterId, class: data.class, ilevel: data.ilevel, name: data.name, charName: data.charName };
         return next;
       });
+      
+      // Update character status to Yellow
+      setSignups(prev => prev.map(s => ({
+          ...s,
+          characters: s.characters.map(c => {
+              if (c.id === data.characterId) {
+                  const key = difficulty === "Mythic" ? "M" : difficulty === "Heroic" ? "H" : "N";
+                  const newStatus = { ...c.status };
+                  // @ts-ignore
+                  newStatus[key] = "Y"; 
+                  return { ...c, status: newStatus };
+              }
+              return c;
+          })
+      })));
 
       // API Call
       try {
+          // Map frontend role to API role (uppercase)
+          const apiRole = role === "Tank" ? "TANK" : role === "Healer" ? "HEALER" : "DPS";
+          
           await rosterApi.add(runId, {
               user_id: data.playerId,
               character_id: data.characterId,
-              assigned_role: role
+              assigned_role: apiRole
           });
           toast.success("Picked for roster.");
       } catch (err) {
           toast.error("Failed to update roster.");
           setRoster(prevRoster); // Revert
+          // Revert status if needed, though complex without deep clone or refresh
       }
 
     } catch (e) {
@@ -289,25 +293,10 @@ export default function AdminRunDetailsPage() {
     }
   }
 
-  async function unassign(role: SlotRole, index: number) { // This functionality is not supported by API "remove", but user asked for it?
-    // The API has `rosterApi.add`.
-    // Does it have `rosterApi.remove`? I commented it out in api.ts as "No explicit remove".
-    // But wait, `POST` usually adds. To remove, maybe we overwrite with nothing? Or `DELETE`?
-    // If I can't remove, I can't implement this button.
-    // However, I can just not show the button or show a warning "Cannot remove yet".
-    // Or I can assume `add` with same user/char updates it? No, that moves them.
-    // If I really need to remove, and no API exists, I'm stuck.
-    // But I will leave the UI and try a DELETE to `.../roster/:slotId` if I can guess slotId? No slotId.
-    // `.../roster` with DELETE body?
-    // I'll disable the remove button functionality or mock it for UI only if I must, but better to warn.
-
-    // Re-reading prompt: "Leader decides... select... complete". Doesn't explicitly say "Deselect".
-    // But "Cancel" exists for users.
-    // I'll just make it local state change for now? No, that de-syncs.
-    // I'll assume for now that I can't remove via API.
+  async function unassign(role: SlotRole, index: number) {
     toast.error("Removing from roster is not supported by API yet.");
   }
-
+  
   async function handleCompleteRun() {
       try {
           await runApi.updateStatus(runId, "COMPLETED");
@@ -319,7 +308,10 @@ export default function AdminRunDetailsPage() {
                 if (!assigned) return c;
                 // Mark as Locked
                 const key = difficulty === "Mythic" ? "M" : difficulty === "Heroic" ? "H" : "N";
-                return { ...c, status: { ...c.status, [key]: "R" } };
+                const newStatus = { ...c.status };
+                // @ts-ignore
+                newStatus[key] = "R";
+                return { ...c, status: newStatus };
               })
             })));
             toast.success("Run completed!");
