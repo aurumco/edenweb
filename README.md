@@ -1,63 +1,44 @@
-# Next.js Framework Starter
+# Eden Raid Manager
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/templates/tree/main/next-starter-template)
+Eden Raid Manager is a Next.js-based web application for managing World of Warcraft raid rosters, signups, and run organization. It connects to a Cloudflare Worker backend (`eden-worker`) and integrates with Discord for authentication and notifications.
 
-<!-- dash-content-start -->
+## Tech Stack
 
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app). It's deployed on Cloudflare Workers as a [static website](https://developers.cloudflare.com/workers/static-assets/).
-
-This template uses [OpenNext](https://opennext.js.org/) via the [OpenNext Cloudflare adapter](https://opennext.js.org/cloudflare), which works by taking the Next.js build output and transforming it, so that it can run in Cloudflare Workers.
-
-<!-- dash-content-end -->
-
-Outside of this repo, you can start a new project with this template using [C3](https://developers.cloudflare.com/pages/get-started/c3/) (the `create-cloudflare` CLI):
-
-```bash
-npm create cloudflare@latest -- --template=cloudflare/templates/next-starter-template
-```
-
-A live public deployment of this template is available at [https://next-starter-template.templates.workers.dev](https://next-starter-template.templates.workers.dev)
+- **Frontend:** Next.js 15 (App Router), Tailwind CSS, shadcn/ui, Lucide Icons
+- **Backend:** Cloudflare Workers, D1 Database
+- **Authentication:** Discord OAuth2
+- **State/Data:** SWR, Server Actions (optional), Fetch API
 
 ## Getting Started
 
-First, run:
+1.  **Install Dependencies:**
+    ```bash
+    npm install
+    ```
 
-```bash
-npm install
-# or
-yarn install
-# or
-pnpm install
-# or
-bun install
-```
+2.  **Environment Setup:**
+    Create a `.env` (or `.env.local`) file with the following:
+    ```bash
+    NEXT_PUBLIC_API_URL=https://api.edenhub.net
+    NEXT_PUBLIC_SERVER_ID=your_discord_server_id
+    ```
 
-Then run the development server (using the package manager of your choice):
+3.  **Run Development Server:**
+    ```bash
+    npm run dev
+    ```
+    Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-```bash
-npm run dev
-```
+## Key Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Dashboard:** View upcoming runs and manage character availability.
+- **Profile:** Track gold balance, performance stats, and reliability score.
+- **Admin:**
+    - Create and manage raid runs.
+    - Drag-and-drop roster management.
+    - Manual signups and roster announcements to Discord.
+- **Character Management:** Register characters with ilevel and specs.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deployment
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Deploying To Production
-
-| Command                           | Action                                       |
-| :-------------------------------- | :------------------------------------------- |
-| `npm run build`                   | Build your production site                   |
-| `npm run preview`                 | Preview your build locally, before deploying |
-| `npm run build && npm run deploy` | Deploy your production site to Cloudflare    |
-| `npm wrangler tail`               | View real-time logs for all Workers          |
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+This project is configured for deployment on Vercel or Cloudflare Pages. Ensure the environment variables are set in your deployment settings.

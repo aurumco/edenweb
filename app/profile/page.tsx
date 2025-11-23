@@ -179,7 +179,7 @@ export default function ProfilePage() {
                 {(profile.finance.currentBalance / 1000).toFixed(1)}K
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {profile.finance.currentBalance.toLocaleString()} USDT
+                {profile.finance.currentBalance.toLocaleString()} Gold
               </p>
             </CardContent>
           </Card>
@@ -197,7 +197,7 @@ export default function ProfilePage() {
                 {(profile.finance.pendingEscrow / 1000).toFixed(1)}K
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {profile.finance.pendingEscrow.toLocaleString()} USDT
+                {profile.finance.pendingEscrow.toLocaleString()} Gold
               </p>
             </CardContent>
           </Card>
