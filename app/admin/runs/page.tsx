@@ -52,7 +52,9 @@ type RunForm = {
   scheduled_minute: string;
   roster_channel_id: string;
   embed_text?: string;
-  capacity?: string;
+  tank_capacity: string;
+  healer_capacity: string;
+  dps_capacity: string;
 };
 
 const SERVER_ID = process.env.NEXT_PUBLIC_SERVER_ID || "980165146762674186";
@@ -62,11 +64,10 @@ export default function AdminRunsIndexPage() {
   const [runs, setRuns] = useState<Run[]>([]);
   const [search, setSearch] = useState("");
   const [filterDifficulty, setFilterDifficulty] = useState<Difficulty | "All">("All");
-  const [filterStatus, setFilterStatus] = useState<"Pending" | "Active" | "Completed" | "All">("All");
+  const [filterStatus, setFilterStatus] = useState<"PENDING" | "ACTIVE" | "COMPLETED" | "All">("All");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [submittingRun, setSubmittingRun] = useState(false);
-  const [scheduledOpen, setScheduledOpen] = useState(false);
   const [scheduleTab, setScheduleTab] = useState<"date" | "time">("date");
   const pageSize = 10;
   const form = useForm<RunForm>({
@@ -77,7 +78,9 @@ export default function AdminRunsIndexPage() {
       scheduled_hour: "20",
       scheduled_minute: "00",
       roster_channel_id: "",
-      capacity: "20",
+      tank_capacity: "2",
+      healer_capacity: "4",
+      dps_capacity: "14",
       embed_text: "",
     },
     mode: "onChange",
@@ -133,8 +136,11 @@ export default function AdminRunsIndexPage() {
         difficulty: data.difficulty,
         scheduled_at: scheduledIso,
         roster_channel_id: data.roster_channel_id,
-        discord_channel_id: data.roster_channel_id,
+        discord_channel_id: data.roster_channel_id, // Assuming same for now or needs another input? Scenario mentions both
         embed_text: data.embed_text,
+        tank_capacity: Number(data.tank_capacity),
+        healer_capacity: Number(data.healer_capacity),
+        dps_capacity: Number(data.dps_capacity),
       });
       toast.success("Run created.");
       form.reset({
@@ -144,7 +150,9 @@ export default function AdminRunsIndexPage() {
         scheduled_hour: "20",
         scheduled_minute: "00",
         roster_channel_id: "",
-        capacity: "20",
+        tank_capacity: "2",
+        healer_capacity: "4",
+        dps_capacity: "14",
         embed_text: "",
       });
       setScheduleTab("date");
@@ -155,6 +163,17 @@ export default function AdminRunsIndexPage() {
     } finally {
       setSubmittingRun(false);
     }
+  }
+
+  async function deleteRun(runId: string) {
+      try {
+          await runApi.delete(runId);
+          setRuns((prev) => prev.filter((x) => x.id !== runId));
+          toast.success("Run deleted.");
+      } catch (err) {
+          toast.error("Failed to delete run");
+          console.error(err);
+      }
   }
 
   const formatUTC = (iso: string) => {
@@ -181,10 +200,10 @@ export default function AdminRunsIndexPage() {
   }, [filteredRuns, page]);
 
   const stats = useMemo(() => {
-    const active = runs.filter((r) => r.status === "Active").length;
-    const pending = runs.filter((r) => r.status === "Pending").length;
-    const completed = runs.filter((r) => r.status === "Completed").length;
-    const capacity = runs.reduce((acc, r) => acc + r.capacity, 0);
+    const active = runs.filter((r) => r.status === "ACTIVE").length;
+    const pending = runs.filter((r) => r.status === "PENDING").length;
+    const completed = runs.filter((r) => r.status === "COMPLETED").length;
+    const capacity = runs.reduce((acc, r) => acc + r.tank_capacity + r.healer_capacity + r.dps_capacity, 0);
     return { active, pending, completed, capacity };
   }, [runs]);
 
@@ -282,14 +301,30 @@ export default function AdminRunsIndexPage() {
                       />
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="capacity">Capacity</Label>
-                      <Input
-                        id="capacity"
-                        placeholder="e.g., 20"
-                        inputMode="numeric"
-                        value={form.watch("capacity")}
-                        onChange={(e) => form.setValue("capacity", e.target.value)}
-                      />
+                      <Label htmlFor="capacities">Capacities (T/H/D)</Label>
+                      <div className="flex gap-2">
+                        <Input
+                            id="tank_capacity"
+                            placeholder="Tank"
+                            inputMode="numeric"
+                            value={form.watch("tank_capacity")}
+                            onChange={(e) => form.setValue("tank_capacity", e.target.value)}
+                        />
+                        <Input
+                            id="healer_capacity"
+                            placeholder="Healer"
+                            inputMode="numeric"
+                            value={form.watch("healer_capacity")}
+                            onChange={(e) => form.setValue("healer_capacity", e.target.value)}
+                        />
+                        <Input
+                            id="dps_capacity"
+                            placeholder="DPS"
+                            inputMode="numeric"
+                            value={form.watch("dps_capacity")}
+                            onChange={(e) => form.setValue("dps_capacity", e.target.value)}
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -507,9 +542,9 @@ export default function AdminRunsIndexPage() {
                   <SelectTrigger className="w-full sm:w-32"><SelectValue placeholder="Status" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="All">All</SelectItem>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
+                    <SelectItem value="PENDING">Pending</SelectItem>
+                    <SelectItem value="ACTIVE">Active</SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -555,7 +590,7 @@ export default function AdminRunsIndexPage() {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{formatUTC(r.scheduled_at)}</TableCell>
                         <TableCell className="hidden md:table-cell">
-                          <Badge className="px-2 py-0.5 text-xs rounded-full" variant={r.status === "Active" ? "success" : r.status === "Pending" ? "warning" : "neutral"}>{r.status}</Badge>
+                          <Badge className="px-2 py-0.5 text-xs rounded-full" variant={r.status === "ACTIVE" ? "success" : r.status === "PENDING" ? "warning" : "neutral"}>{r.status}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="inline-flex items-center gap-2">
@@ -585,7 +620,7 @@ export default function AdminRunsIndexPage() {
                                     </AlertDialogHeader>
                                     <div className="flex justify-end gap-2">
                                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => { setRuns((prev) => prev.filter((x) => x.id !== r.id)); toast.success("Run deleted."); }}>Delete</AlertDialogAction>
+                                      <AlertDialogAction onClick={() => deleteRun(r.id)}>Delete</AlertDialogAction>
                                     </div>
                                   </AlertDialogContent>
                                 </AlertDialog>

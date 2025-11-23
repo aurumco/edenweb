@@ -16,7 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { Shield, Heart, Wand2, X, ChevronDown } from "lucide-react";
-import { signupApi, rosterApi, runApi } from "@/lib/api";
+import { signupApi, rosterApi, runApi, characterApi, RosterSlot, Character as ApiCharacter, Signup as ApiSignup } from "@/lib/api";
 
 const DIFFICULTIES = ["Mythic", "Heroic", "Normal"] as const;
 type Difficulty = (typeof DIFFICULTIES)[number];
@@ -25,6 +25,7 @@ type SlotRole = "Tank" | "Healer" | "DPS";
 
 interface Player { id: string; name: string }
 interface CharacterStatus { M: "G" | "Y" | "R"; H: "G" | "Y" | "R"; N: "G" | "Y" | "R" }
+
 interface Character {
   id: string;
   class: string;
@@ -33,7 +34,9 @@ interface Character {
   log?: number; // e.g. 99
   status: CharacterStatus;
   name?: string; // character name
+  apiStatus: "AVAILABLE" | "UNAVAILABLE";
 }
+
 interface Signup {
   player: Player;
   signed: boolean;
@@ -42,8 +45,6 @@ interface Signup {
 }
 
 interface Assignment { playerId: string; characterId: string; class: string; ilevel: number; name: string; charName: string }
-
-const ROSTER_CAPACITY: Record<SlotRole, number> = { Tank: 2, Healer: 4, DPS: 14 };
 
 const CLASS_COLORS: Record<string, string> = {
   "Warrior": "#C79C6E",
@@ -67,11 +68,10 @@ function classGradient(color: string) {
   } as React.CSSProperties;
 }
 
-const SERVER_ID = process.env.NEXT_PUBLIC_SERVER_ID || "980165146762674186";
-
 export default function AdminRunDetailsPage() {
   const params = useParams<{ runId: string }>();
   const runId = params?.runId ?? "unknown";
+  const [run, setRun] = useState<any>(null);
   const [difficulty, setDifficulty] = useState<Difficulty>("Mythic");
   const [signups, setSignups] = useState<Signup[]>([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
@@ -79,32 +79,148 @@ export default function AdminRunDetailsPage() {
   const [roleFilter, setRoleFilter] = useState<SlotRole | "All">("All");
   const allClasses = useMemo(() => Array.from(new Set(signups.flatMap(s => s.characters.map(c => c.class)))).sort(), [signups]);
   const [classFilter, setClassFilter] = useState<string | "All">("All");
+
+  // Initial capacities, updated after run fetch
+  const [capacities, setCapacities] = useState<Record<SlotRole, number>>({ Tank: 2, Healer: 4, DPS: 14 });
+
   const [roster, setRoster] = useState<Record<SlotRole, (Assignment | null)[]>>({
-    Tank: Array.from({ length: ROSTER_CAPACITY.Tank }, () => null),
-    Healer: Array.from({ length: ROSTER_CAPACITY.Healer }, () => null),
-    DPS: Array.from({ length: ROSTER_CAPACITY.DPS }, () => null),
+    Tank: Array.from({ length: 2 }, () => null),
+    Healer: Array.from({ length: 4 }, () => null),
+    DPS: Array.from({ length: 14 }, () => null),
   });
 
-  // Fetch signups and roster on mount
+  // Fetch signups, roster, and characters on mount
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [signupsData, rosterData] = await Promise.all([
-          signupApi.list(SERVER_ID, runId),
-          rosterApi.get(SERVER_ID, runId),
+
+        // Also fetch run for capacities
+        const [runData, signupsData, rosterData] = await Promise.all([
+            runApi.get("unused", runId), // serverId is unused in my new api implementation
+            signupApi.list(runId),
+            rosterApi.get(runId),
         ]);
 
-        // Map API signups to component format
-        const mappedSignups: Signup[] = signupsData.map((signup: any) => ({
-          player: { id: signup.user_id, name: signup.user_id }, // Use user_id as name fallback
-          signed: signup.signup_type === "MAIN",
-          backup: signup.signup_type === "BENCH",
-          characters: [], // Will be populated from character data if available
-        }));
+        setRun(runData);
+        setCapacities({
+            Tank: runData.tank_capacity,
+            Healer: runData.healer_capacity,
+            DPS: runData.dps_capacity
+        });
+        setDifficulty(runData.difficulty);
+
+        // Re-initialize roster based on new capacity
+        const newRoster = {
+            Tank: Array.from({ length: runData.tank_capacity }, () => null) as (Assignment | null)[],
+            Healer: Array.from({ length: runData.healer_capacity }, () => null) as (Assignment | null)[],
+            DPS: Array.from({ length: runData.dps_capacity }, () => null) as (Assignment | null)[],
+        };
+
+        const mappedSignups: Signup[] = [];
+
+        (signupsData as any[]).forEach((s: any) => {
+            // Use display_name, fallback to user_id if missing
+            const player: Player = {
+                id: s.user_id,
+                name: s.display_name || s.user?.username || s.user_id
+            };
+
+            // Use available_characters as per new doc, fallback to s.characters if available_characters missing
+            const sourceChars = s.available_characters || s.characters || [];
+
+            const chars: Character[] = sourceChars.map((c: any) => {
+                 // specs parsing
+                 const specs = Array.isArray(c.specs) ? c.specs : (typeof c.specs === "string" ? JSON.parse(c.specs) : []);
+                 const roles: SlotRole[] = specs.map((sp: any) => sp.role);
+
+                 return {
+                     id: c.id,
+                     class: c.char_class,
+                     ilevel: c.ilevel,
+                     roles: Array.from(new Set(roles)), // unique roles
+                     name: c.char_name,
+                     status: { M: "G", H: "G", N: "G" }, // Default to Green (Available)
+                     apiStatus: c.status
+                 };
+            });
+
+            mappedSignups.push({
+                player,
+                signed: s.signup_type === "MAIN",
+                backup: s.signup_type === "BENCH",
+                characters: chars
+            });
+        });
 
         setSignups(mappedSignups);
-        setSelectedPlayerId(mappedSignups[0]?.player.id ?? null);
+
+        // Fill Roster
+        rosterData.forEach((slot: RosterSlot) => {
+            // Find character details from signups
+            let charDetails: Assignment | null = null;
+
+            for (const s of mappedSignups) {
+                if (s.player.id === slot.user_id) {
+                     const c = s.characters.find(ch => ch.id === slot.character_id);
+                     if (c) {
+                         charDetails = {
+                             playerId: s.player.id,
+                             characterId: c.id,
+                             class: c.class,
+                             ilevel: c.ilevel,
+                             name: s.player.name,
+                             charName: c.name || c.class
+                         };
+                         break;
+                     }
+                }
+            }
+
+            // If we found details, place in roster
+            // Map uppercase roles from API (TANK, HEALER, DPS) to frontend keys (Tank, Healer, DPS)
+            let roleKey: SlotRole | null = null;
+            if (slot.assigned_role === "TANK") roleKey = "Tank";
+            else if (slot.assigned_role === "HEALER") roleKey = "Healer";
+            else if (slot.assigned_role === "DPS") roleKey = "DPS";
+
+            if (charDetails && roleKey && newRoster[roleKey]) {
+                 const emptyIdx = newRoster[roleKey].indexOf(null);
+                 if (emptyIdx !== -1) {
+                     newRoster[roleKey][emptyIdx] = charDetails;
+                 }
+            }
+        });
+
+        // After populating roster, update character statuses
+        // Logic:
+        // If assigned to THIS run:
+        //   If run.status === "COMPLETED" -> Red (R)
+        //   Else -> Yellow (Y)
+        // If not assigned -> Green (G) (default)
+
+        const isCompleted = runData.status === "COMPLETED";
+
+        const updatedSignups = mappedSignups.map(s => ({
+            ...s,
+            characters: s.characters.map(c => {
+                // Check if this character is in the roster
+                const isAssigned = Object.values(newRoster).some(slots => slots.some(a => a?.characterId === c.id));
+
+                if (isAssigned) {
+                    const key = runData.difficulty === "Mythic" ? "M" : runData.difficulty === "Heroic" ? "H" : "N";
+                    const newStatus = { ...c.status };
+                    // @ts-ignore
+                    newStatus[key] = isCompleted ? "R" : "Y";
+                    return { ...c, status: newStatus };
+                }
+                return c;
+            })
+        }));
+
+        setSignups(updatedSignups);
+        setRoster(newRoster);
+
       } catch (err) {
         toast.error("Failed to load run data");
         console.error(err);
@@ -124,51 +240,93 @@ export default function AdminRunDetailsPage() {
     return Object.values(roster).some(slots => slots.some(a => a?.characterId === characterId));
   }
 
-  function onDrop(role: SlotRole, index: number, dataText: string) {
+  async function onDrop(role: SlotRole, index: number, dataText: string) {
     try {
       const data = JSON.parse(dataText) as Assignment & { roles: SlotRole[]; charName: string };
       if (!data.roles.includes(role)) {
         toast.error(`Character cannot fill ${role}.`);
         return;
       }
+
+      // Optimistic update
+      const prevRoster = { ...roster };
       setRoster(prev => {
         const next = { ...prev, [role]: [...prev[role]] } as typeof prev;
         next[role][index] = { playerId: data.playerId, characterId: data.characterId, class: data.class, ilevel: data.ilevel, name: data.name, charName: data.charName };
         return next;
       });
+
+      // Update character status to Yellow
       setSignups(prev => prev.map(s => ({
-        ...s,
-        characters: s.characters.map(c => {
-          if (c.id !== data.characterId) return c;
-          const key = difficulty === "Mythic" ? "M" : difficulty === "Heroic" ? "H" : "N";
-          const status: CharacterStatus = { ...c.status, [key]: c.status[key] === "R" ? "R" : "Y" } as CharacterStatus;
-          return { ...c, status };
-        })
+          ...s,
+          characters: s.characters.map(c => {
+              if (c.id === data.characterId) {
+                  const key = difficulty === "Mythic" ? "M" : difficulty === "Heroic" ? "H" : "N";
+                  const newStatus = { ...c.status };
+                  // @ts-ignore
+                  newStatus[key] = "Y";
+                  return { ...c, status: newStatus };
+              }
+              return c;
+          })
       })));
-      toast.success("Picked for roster.");
+
+      // API Call
+      try {
+          // Map frontend role to API role (uppercase)
+          const apiRole = role === "Tank" ? "TANK" : role === "Healer" ? "HEALER" : "DPS";
+
+          await rosterApi.add(runId, {
+              user_id: data.playerId,
+              character_id: data.characterId,
+              assigned_role: apiRole
+          });
+          toast.success("Picked for roster.");
+      } catch (err) {
+          toast.error("Failed to update roster.");
+          setRoster(prevRoster); // Revert
+          // Revert status if needed, though complex without deep clone or refresh
+      }
+
     } catch (e) {
+        console.error(e);
     }
   }
 
-  function unassign(role: SlotRole, index: number) {
-    setRoster(prev => {
-      const next = { ...prev, [role]: [...prev[role]] } as typeof prev;
-      const removed = next[role][index];
-      next[role][index] = null;
-      if (removed) {
-        setSignups(prev => prev.map(s => ({
-          ...s,
-          characters: s.characters.map(c => {
-            if (c.id !== removed.characterId) return c;
-            const key = difficulty === "Mythic" ? "M" : difficulty === "Heroic" ? "H" : "N";
-            const newVal = c.status[key] === "R" ? "R" : "G";
-            return { ...c, status: { ...c.status, [key]: newVal } };
-          })
-        })));
+  async function unassign(role: SlotRole, index: number) {
+    toast.error("Removing from roster is not supported by API yet.");
+  }
+
+  async function handleCompleteRun() {
+      try {
+          await runApi.updateStatus(runId, "COMPLETED");
+           // Update UI
+           setSignups(prev => prev.map(s => ({
+              ...s,
+              characters: s.characters.map(c => {
+                const assigned = Object.values(roster).some(slots => slots.some(a => a?.characterId === c.id));
+                if (!assigned) return c;
+                // Mark as Locked
+                const key = difficulty === "Mythic" ? "M" : difficulty === "Heroic" ? "H" : "N";
+                const newStatus = { ...c.status };
+                // @ts-ignore
+                newStatus[key] = "R";
+                return { ...c, status: newStatus };
+              })
+            })));
+            toast.success("Run completed!");
+      } catch (err) {
+          toast.error("Failed to complete run");
       }
-      return next;
-    });
-    toast.error("Removed from roster.");
+  }
+
+  async function handleAnnounce() {
+      try {
+          await runApi.announce(runId);
+          toast.success("Roster announced to Discord.");
+      } catch (err) {
+          toast.error("Failed to announce");
+      }
   }
 
   const counts = useMemo(() => ({
@@ -177,7 +335,7 @@ export default function AdminRunDetailsPage() {
     DPS: roster.DPS.filter(Boolean).length,
   }), [roster]);
 
-  const totalCapacity = ROSTER_CAPACITY.Tank + ROSTER_CAPACITY.Healer + ROSTER_CAPACITY.DPS;
+  const totalCapacity = capacities.Tank + capacities.Healer + capacities.DPS;
   const totalAssigned = counts.Tank + counts.Healer + counts.DPS;
 
   return (
@@ -186,20 +344,14 @@ export default function AdminRunDetailsPage() {
         {/* Header */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1">
-            <h1 className="text-xl font-semibold">Run #{runId}</h1>
+            <h1 className="text-xl font-semibold">Run #{run?.title || runId}</h1>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>Difficulty:</span>
-              <div className="flex items-center gap-1">
-                {DIFFICULTIES.map(d => (
-                  <Button key={d} size="sm" variant={d === difficulty ? "default" : "outline"} onClick={() => setDifficulty(d)} className={d === difficulty ? "bg-primary/10 text-primary hover:bg-primary/30" : ""}>
-                    {d}
-                  </Button>
-                ))}
-              </div>
+              <Badge variant="outline">{difficulty}</Badge>
               <Separator orientation="vertical" className="mx-2 h-4" />
               <span>Roster: {totalAssigned}/{totalCapacity}</span>
               <Separator orientation="vertical" className="mx-2 h-4" />
-              <span>T:{counts.Tank} H:{counts.Healer} D:{counts.DPS}</span>
+              <span>T:{counts.Tank}/{capacities.Tank} H:{counts.Healer}/{capacities.Healer} D:{counts.DPS}/{capacities.DPS}</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -220,8 +372,7 @@ export default function AdminRunDetailsPage() {
                     </div>
                   </div>
                   <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => toast.success("Roster copied to clipboard (mock).")}>Copy</Button>
-                    <Button onClick={() => toast.success("Roster announced to Discord (mock).")}>Announce</Button>
+                    <Button onClick={handleAnnounce}>Announce</Button>
                   </div>
                 </div>
               </DialogContent>
@@ -234,23 +385,12 @@ export default function AdminRunDetailsPage() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Complete Run?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will mark all assigned characters as saved for this difficulty. This action cannot be undone.
+                    This will mark the run as COMPLETED and update character statuses.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="flex justify-end gap-2">
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => {
-                    setSignups(prev => prev.map(s => ({
-                      ...s,
-                      characters: s.characters.map(c => {
-                        const assigned = Object.values(roster).some(slots => slots.some(a => a?.characterId === c.id));
-                        if (!assigned) return c;
-                        const key = difficulty === "Mythic" ? "M" : difficulty === "Heroic" ? "H" : "N";
-                        return { ...c, status: { ...c.status, [key]: "R" } };
-                      })
-                    })));
-                    toast.success("Run completed!");
-                  }}>Complete</AlertDialogAction>
+                  <AlertDialogAction onClick={handleCompleteRun}>Complete</AlertDialogAction>
                 </div>
               </AlertDialogContent>
             </AlertDialog>
@@ -270,7 +410,7 @@ export default function AdminRunDetailsPage() {
                   <div key={role} className="rounded-lg p-3">
                     <div className="mb-2 flex items-center justify-between">
                       <div className="flex items-center gap-2 text-sm font-medium">{roleIcon} {role}</div>
-                      <Badge variant="outline">{roster[role].filter(Boolean).length}/{ROSTER_CAPACITY[role]}</Badge>
+                      <Badge variant="outline">{roster[role].filter(Boolean).length}/{capacities[role]}</Badge>
                     </div>
                     <div className="space-y-2">
                       {roster[role].map((assignment, i) => (
