@@ -23,13 +23,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       setHasUserPref(true);
       return;
     }
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    setTheme(media.matches ? "dark" : "light");
-    const listener = (e: MediaQueryListEvent) => {
-      if (!hasUserPref) setTheme(e.matches ? "dark" : "light");
-    };
-    media.addEventListener?.("change", listener);
-    return () => media.removeEventListener?.("change", listener);
+    setTheme("dark"); // Force default to dark for futuristic look
+    setHasUserPref(true);
   }, [hasUserPref]);
 
   useEffect(() => {

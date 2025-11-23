@@ -353,7 +353,6 @@ export default function AdminRunDetailsPage() {
                     </div>
                   </div>
                   <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => toast.success("Roster copied to clipboard (mock).")}>Copy</Button>
                     <Button onClick={() => handleAnnounce(true)}>Announce</Button>
                   </div>
                 </div>
