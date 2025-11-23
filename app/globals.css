@@ -2,22 +2,19 @@
 @import "tw-animate-css";
 
 :root {
-  /* Darker background for high contrast with cards */
   --background: #09090b; /* Zinc 950 */
   --foreground: #fafafa; /* Zinc 50 */
 
-  /* Lighter card background for "boxy" feel */
-  --card: #18181b;       /* Zinc 900 */
+  --card: #09090b;
   --card-foreground: #fafafa;
 
-  --popover: #18181b;    /* Match card */
+  --popover: #09090b;
   --popover-foreground: #fafafa;
 
-  /* Vibrant Orange */
-  --primary: #f97316;    /* Orange 500 */
+  --primary: #f97316; /* Orange 500 */
   --primary-foreground: #fafafa;
 
-  --secondary: #27272a;  /* Zinc 800 */
+  --secondary: #27272a; /* Zinc 800 */
   --secondary-foreground: #fafafa;
 
   --muted: #27272a;
@@ -29,11 +26,11 @@
   --destructive: #7f1d1d; /* Red 900 */
   --destructive-foreground: #fafafa;
 
-  --border: #27272a;      /* Visible border */
+  --border: #27272a;
   --input: #27272a;
   --ring: #f97316;
 
-  --radius: 0.75rem;      /* More rounded */
+  --radius: 0.5rem;
 }
 
 html.light {
@@ -49,7 +46,7 @@ html.light {
   --primary: #f97316;
   --primary-foreground: #fafafa;
 
-  --secondary: #f4f4f5;
+  --secondary: #f4f4f5; /* Zinc 100 */
   --secondary-foreground: #18181b;
 
   --muted: #f4f4f5;
@@ -61,7 +58,7 @@ html.light {
   --destructive: #ef4444;
   --destructive-foreground: #fafafa;
 
-  --border: #e4e4e7;
+  --border: #e4e4e7; /* Zinc 200 */
   --input: #e4e4e7;
   --ring: #f97316;
 }
