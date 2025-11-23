@@ -106,7 +106,7 @@ export interface Character {
   ilevel: number;
   specs: CharacterSpec[];
   // wcl_logs?: number; // Not in documented POST/GET response explicitly but implied by scenario "Log(int)"
-  status?: "AVAILABLE" | "UNAVAILABLE";
+  status?: "AVAILABLE" | "UNAVAILABLE"; 
 }
 
 export const characterApi = {
@@ -120,7 +120,7 @@ export const characterApi = {
   // but implied by "Edit character" requirement. Using PATCH /api/characters/:id based on standard patterns.
   update: (id: string, data: Partial<CharacterInput>) =>
     apiCall<Character>(`/api/characters/${id}`, {
-      method: "PATCH",
+      method: "PATCH", 
       body: JSON.stringify(data),
     }),
   updateStatus: (id: string, status: "AVAILABLE" | "UNAVAILABLE") =>
@@ -179,12 +179,12 @@ export const runApi = {
     }),
   delete: (runId: string) =>
     apiCall<void>(`/api/runs/${runId}`, { method: "DELETE" }),
-  updateStatus: (runId: string, status: string) =>
+  updateStatus: (runId: string, status: string) => 
     apiCall<Run>(`/api/runs/${runId}/status`, {
         method: "PATCH",
         body: JSON.stringify({ status })
     }),
-  announce: (runId: string) =>
+  announce: (runId: string) => 
       apiCall<void>(`/api/runs/${runId}/announce`, {
           method: "POST"
       })
