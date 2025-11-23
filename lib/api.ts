@@ -26,7 +26,7 @@ async function apiCall<T>(
       message: `API Error: ${response.status}`,
     };
 
-try {
+    try {
       const data = await response.json();
       if (data && typeof data === 'object' && 'message' in data) {
         error.message = (data as any).message || error.message;
@@ -36,6 +36,11 @@ try {
     }
 
     throw error;
+  }
+
+  // For 204 No Content or empty responses
+  if (response.status === 204) {
+      return {} as T;
   }
 
   try {
@@ -76,16 +81,22 @@ export const authApi = {
   login: () => {
     window.location.href = `${API_BASE_URL}/api/auth/login`;
   },
-  logout: () => apiCall<void>("/api/auth/logout", { method: "GET" }),
+  logout: () => apiCall<void>("/api/auth/logout", { method: "GET" }), // Redirects usually handle this, but maybe API returns 200 and then frontend redirects
   getProfile: () => apiCall<UserProfile>("/api/profile"),
 };
 
 // Character endpoints
+export interface CharacterSpec {
+    spec: string;
+    role: string;
+    type: string;
+}
+
 export interface CharacterInput {
   char_name: string;
   char_class: string;
   ilevel: number;
-  specs: string[];
+  specs: CharacterSpec[];
 }
 
 export interface Character {
@@ -93,9 +104,9 @@ export interface Character {
   char_name: string;
   char_class: string;
   ilevel: number;
-  specs: string[];
-  wcl_logs?: number;
-  status?: "Available" | "Unavailable";
+  specs: CharacterSpec[];
+  // wcl_logs?: number; // Not in documented POST/GET response explicitly but implied by scenario "Log(int)"
+  status?: "AVAILABLE" | "UNAVAILABLE";
 }
 
 export const characterApi = {
@@ -105,12 +116,14 @@ export const characterApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+  // Note: Update character details is not explicitly documented in the README summary,
+  // but implied by "Edit character" requirement. Using PATCH /api/characters/:id based on standard patterns.
   update: (id: string, data: Partial<CharacterInput>) =>
     apiCall<Character>(`/api/characters/${id}`, {
-      method: "PUT",
+      method: "PATCH",
       body: JSON.stringify(data),
     }),
-  updateStatus: (id: string, status: "Available" | "Unavailable") =>
+  updateStatus: (id: string, status: "AVAILABLE" | "UNAVAILABLE") =>
     apiCall<Character>(`/api/characters/${id}/status`, {
       method: "PATCH",
       body: JSON.stringify({ status }),
@@ -123,12 +136,14 @@ export const characterApi = {
 export interface RunInput {
   server_id: string;
   title: string;
-  difficulty: "Mythic" | "Heroic" | "Normal";
+  difficulty: "Mythic" | "Heroic" | "Normal"; // "that three"
   scheduled_at: string;
   roster_channel_id: string;
-  discord_channel_id?: string;
+  discord_channel_id: string; // Required
   embed_text?: string;
-  capacity?: number;
+  tank_capacity: number;
+  healer_capacity: number;
+  dps_capacity: number;
 }
 
 export interface Run {
@@ -138,11 +153,13 @@ export interface Run {
   difficulty: "Mythic" | "Heroic" | "Normal";
   scheduled_at: string;
   roster_channel_id: string;
+  discord_channel_id: string;
   embed_text?: string;
-  capacity: number;
-  status: "Pending" | "Active" | "Completed";
-  created_at: string;
-  updated_at: string;
+  tank_capacity: number;
+  healer_capacity: number;
+  dps_capacity: number;
+  status: "PENDING" | "ACTIVE" | "COMPLETED"; // Check status enum validity
+  // created_at, updated_at might be returned
 }
 
 export const runApi = {
@@ -155,71 +172,71 @@ export const runApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
-  update: (serverId: string, runId: string, data: Partial<RunInput>) =>
-    apiCall<Run>(`/api/runs/${serverId}/${runId}`, {
-      method: "PUT",
+  update: (runId: string, data: Partial<RunInput>) =>
+    apiCall<Run>(`/api/runs/${runId}`, {
+      method: "PATCH",
       body: JSON.stringify(data),
     }),
-  delete: (serverId: string, runId: string) =>
-    apiCall<void>(`/api/runs/${serverId}/${runId}`, { method: "DELETE" }),
-  complete: (serverId: string, runId: string) =>
-    apiCall<Run>(`/api/runs/${serverId}/${runId}/complete`, {
-      method: "POST",
+  delete: (runId: string) =>
+    apiCall<void>(`/api/runs/${runId}`, { method: "DELETE" }),
+  updateStatus: (runId: string, status: string) =>
+    apiCall<Run>(`/api/runs/${runId}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status })
     }),
+  announce: (runId: string) =>
+      apiCall<void>(`/api/runs/${runId}/announce`, {
+          method: "POST"
+      })
 };
 
 // Signup endpoints
 export interface SignupInput {
-  signup_type: "MAIN" | "ALT" | "BENCH";
+  signup_type: "MAIN" | "BENCH" | "ALT" | "DECLINE";
 }
 
 export interface Signup {
   id: string;
   user_id: string;
   run_id: string;
-  character_id: string;
-  signup_type: "MAIN" | "ALT" | "BENCH";
+  character_id: string; // Probably returned?
+  signup_type: "MAIN" | "BENCH" | "ALT" | "DECLINE";
   created_at: string;
+  // User/Character details might be expanded or separate
 }
 
 export const signupApi = {
-  list: (serverId: string, runId: string) =>
-    apiCall<Signup[]>(`/api/runs/${serverId}/${runId}/signups`),
-  create: (serverId: string, runId: string, data: SignupInput) =>
-    apiCall<Signup>(`/api/runs/${serverId}/${runId}/signup`, {
+  list: (runId: string) =>
+    apiCall<Signup[]>(`/api/runs/${runId}/signups`),
+  create: (runId: string, data: SignupInput) =>
+    apiCall<Signup>(`/api/runs/${runId}/signup`, {
       method: "POST",
       body: JSON.stringify(data),
     }),
-  delete: (serverId: string, runId: string, signupId: string) =>
-    apiCall<void>(`/api/runs/${serverId}/${runId}/signups/${signupId}`, {
-      method: "DELETE",
-    }),
+  // No delete endpoint documented for signups
 };
 
 // Roster endpoints
 export interface RosterSlot {
-  id: string;
-  run_id: string;
-  role: "Tank" | "Healer" | "DPS";
-  character_id?: string;
-  position: number;
+  // id: string; // Slot ID? Or is it user_id/char_id?
+  user_id: string;
+  character_id: string;
+  assigned_role: "Tank" | "Healer" | "DPS";
 }
 
 export interface RosterInput {
+  user_id: string;
   character_id: string;
-  role: "Tank" | "Healer" | "DPS";
+  assigned_role: "Tank" | "Healer" | "DPS";
 }
 
 export const rosterApi = {
-  get: (serverId: string, runId: string) =>
-    apiCall<RosterSlot[]>(`/api/runs/${serverId}/${runId}/roster`),
-  add: (serverId: string, runId: string, data: RosterInput) =>
-    apiCall<RosterSlot>(`/api/runs/${serverId}/${runId}/roster`, {
+  get: (runId: string) =>
+    apiCall<RosterSlot[]>(`/api/runs/${runId}/roster`),
+  add: (runId: string, data: RosterInput) =>
+    apiCall<RosterSlot>(`/api/runs/${runId}/roster`, {
       method: "POST",
       body: JSON.stringify(data),
     }),
-  remove: (serverId: string, runId: string, slotId: string) =>
-    apiCall<void>(`/api/runs/${serverId}/${runId}/roster/${slotId}`, {
-      method: "DELETE",
-    }),
+  // No explicit remove endpoint. Maybe 'add' handles updates.
 };
