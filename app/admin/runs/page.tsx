@@ -30,9 +30,8 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Plus, Calendar as CalendarIcon, Clock as ClockIcon, Copy, FileDown, Trash2 } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Clock as ClockIcon, Trash2, MoreHorizontal } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input as TextInput } from "@/components/ui/input";
 import { format } from "date-fns";
@@ -51,8 +50,11 @@ type RunForm = {
   scheduled_hour: string;
   scheduled_minute: string;
   roster_channel_id: string;
+  discord_channel_id: string;
   embed_text?: string;
-  capacity?: string;
+  tank_capacity: number;
+  healer_capacity: number;
+  dps_capacity: number;
 };
 
 const SERVER_ID = process.env.NEXT_PUBLIC_SERVER_ID || "980165146762674186";
@@ -62,11 +64,10 @@ export default function AdminRunsIndexPage() {
   const [runs, setRuns] = useState<Run[]>([]);
   const [search, setSearch] = useState("");
   const [filterDifficulty, setFilterDifficulty] = useState<Difficulty | "All">("All");
-  const [filterStatus, setFilterStatus] = useState<"Pending" | "Active" | "Completed" | "All">("All");
+  const [filterStatus, setFilterStatus] = useState<"PENDING" | "COMPLETED" | "All">("All");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [submittingRun, setSubmittingRun] = useState(false);
-  const [scheduledOpen, setScheduledOpen] = useState(false);
   const [scheduleTab, setScheduleTab] = useState<"date" | "time">("date");
   const pageSize = 10;
   const form = useForm<RunForm>({
@@ -77,7 +78,10 @@ export default function AdminRunsIndexPage() {
       scheduled_hour: "20",
       scheduled_minute: "00",
       roster_channel_id: "",
-      capacity: "20",
+      discord_channel_id: "",
+      tank_capacity: 2,
+      healer_capacity: 4,
+      dps_capacity: 14,
       embed_text: "",
     },
     mode: "onChange",
@@ -106,6 +110,17 @@ export default function AdminRunsIndexPage() {
     }
   };
 
+  const handleDeleteRun = async (runId: string) => {
+    try {
+      await runApi.delete(runId);
+      toast.success("Run deleted.");
+      setRuns((prev) => prev.filter((x) => x.id !== runId));
+    } catch (err) {
+      toast.error("Failed to delete run");
+      console.error(err);
+    }
+  }
+
   const isValid = useMemo(() => {
     const v = form.getValues();
     return (
@@ -133,8 +148,11 @@ export default function AdminRunsIndexPage() {
         difficulty: data.difficulty,
         scheduled_at: scheduledIso,
         roster_channel_id: data.roster_channel_id,
-        discord_channel_id: data.roster_channel_id,
+        discord_channel_id: data.discord_channel_id,
         embed_text: data.embed_text,
+        tank_capacity: Number(data.tank_capacity),
+        healer_capacity: Number(data.healer_capacity),
+        dps_capacity: Number(data.dps_capacity),
       });
       toast.success("Run created.");
       form.reset({
@@ -144,7 +162,10 @@ export default function AdminRunsIndexPage() {
         scheduled_hour: "20",
         scheduled_minute: "00",
         roster_channel_id: "",
-        capacity: "20",
+        discord_channel_id: "",
+        tank_capacity: 2,
+        healer_capacity: 4,
+        dps_capacity: 14,
         embed_text: "",
       });
       setScheduleTab("date");
@@ -159,10 +180,10 @@ export default function AdminRunsIndexPage() {
 
   const formatUTC = (iso: string) => {
     const date = new Date(iso);
-    const day = String(date.getUTCDate()).padStart(2, "0");
-    const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-    const hour = String(date.getUTCHours()).padStart(2, "0");
-    const minute = String(date.getUTCMinutes()).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const hour = String(date.getHours()).padStart(2, "0");
+    const minute = String(date.getMinutes()).padStart(2, "0");
     return `${day}-${month}, ${hour}:${minute}`;
   };
 
@@ -181,11 +202,10 @@ export default function AdminRunsIndexPage() {
   }, [filteredRuns, page]);
 
   const stats = useMemo(() => {
-    const active = runs.filter((r) => r.status === "Active").length;
-    const pending = runs.filter((r) => r.status === "Pending").length;
-    const completed = runs.filter((r) => r.status === "Completed").length;
-    const capacity = runs.reduce((acc, r) => acc + r.capacity, 0);
-    return { active, pending, completed, capacity };
+    const pending = runs.filter((r) => r.status === "PENDING").length;
+    const completed = runs.filter((r) => r.status === "COMPLETED").length;
+    const capacity = runs.reduce((acc, r) => acc + r.tank_capacity + r.healer_capacity + r.dps_capacity, 0);
+    return { pending, completed, capacity };
   }, [runs]);
 
   useEffect(() => {
@@ -276,26 +296,55 @@ export default function AdminRunsIndexPage() {
                       <Label htmlFor="roster_channel_id">Roster Channel ID</Label>
                       <Input
                         id="roster_channel_id"
-                        placeholder="Channel ID for announcements"
+                        placeholder="Channel ID"
                         value={form.watch("roster_channel_id")}
                         onChange={(e) => form.setValue("roster_channel_id", e.target.value)}
                       />
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="capacity">Capacity</Label>
+                      <Label htmlFor="discord_channel_id">Announcement Channel ID</Label>
                       <Input
-                        id="capacity"
-                        placeholder="e.g., 20"
-                        inputMode="numeric"
-                        value={form.watch("capacity")}
-                        onChange={(e) => form.setValue("capacity", e.target.value)}
+                        id="discord_channel_id"
+                        placeholder="Channel ID"
+                        value={form.watch("discord_channel_id")}
+                        onChange={(e) => form.setValue("discord_channel_id", e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="tank_capacity">Tanks</Label>
+                      <Input
+                        id="tank_capacity"
+                        type="number"
+                        value={form.watch("tank_capacity")}
+                        onChange={(e) => form.setValue("tank_capacity", parseInt(e.target.value))}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="healer_capacity">Healers</Label>
+                      <Input
+                        id="healer_capacity"
+                        type="number"
+                        value={form.watch("healer_capacity")}
+                        onChange={(e) => form.setValue("healer_capacity", parseInt(e.target.value))}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="dps_capacity">DPS</Label>
+                      <Input
+                        id="dps_capacity"
+                        type="number"
+                        value={form.watch("dps_capacity")}
+                        onChange={(e) => form.setValue("dps_capacity", parseInt(e.target.value))}
                       />
                     </div>
                   </div>
 
                   <div className="space-y-3">
                     <div className="grid gap-2">
-                      <Label htmlFor="embed_text">Embed Text</Label>
+                      <Label htmlFor="embed_text">Embed Text (Header)</Label>
                       <Textarea
                         id="embed_text"
                         placeholder="Message content for Discord embed"
@@ -309,8 +358,8 @@ export default function AdminRunsIndexPage() {
                           Close
                         </Button>
                       </DialogClose>
-                      <Button type="submit" disabled={!isValid}>
-                        Create
+                      <Button type="submit" disabled={!isValid || submittingRun}>
+                        {submittingRun ? "Creating..." : "Create"}
                       </Button>
                     </div>
                   </div>
@@ -457,13 +506,6 @@ export default function AdminRunsIndexPage() {
           <>
           <div className="rounded-2xl bg-card p-4">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-2xl font-bold text-foreground">{stats.active}</div>
-              <div className="text-xs font-medium text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-md">Active</div>
-            </div>
-            <div className="text-xs text-muted-foreground">Runs</div>
-          </div>
-          <div className="rounded-2xl bg-card p-4">
-            <div className="flex items-center justify-between mb-2">
               <div className="text-2xl font-bold text-foreground">{stats.pending}</div>
               <div className="text-xs font-medium text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md">Pending</div>
             </div>
@@ -478,10 +520,10 @@ export default function AdminRunsIndexPage() {
           </div>
           <div className="rounded-2xl bg-card p-4">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-2xl font-bold text-foreground">12</div>
-              <div className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-md">Players</div>
+              <div className="text-2xl font-bold text-foreground">{stats.capacity}</div>
+              <div className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-md">Slots</div>
             </div>
-            <div className="text-xs text-muted-foreground">Total</div>
+            <div className="text-xs text-muted-foreground">Total Capacity</div>
           </div>
           </>
           )}
@@ -507,9 +549,8 @@ export default function AdminRunsIndexPage() {
                   <SelectTrigger className="w-full sm:w-32"><SelectValue placeholder="Status" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="All">All</SelectItem>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
+                    <SelectItem value="PENDING">Pending</SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -519,7 +560,7 @@ export default function AdminRunsIndexPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Active Runs</CardTitle>
+            <CardTitle>Runs List</CardTitle>
             <CardDescription>Manage and open details for each run.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -555,7 +596,7 @@ export default function AdminRunsIndexPage() {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{formatUTC(r.scheduled_at)}</TableCell>
                         <TableCell className="hidden md:table-cell">
-                          <Badge className="px-2 py-0.5 text-xs rounded-full" variant={r.status === "Active" ? "success" : r.status === "Pending" ? "warning" : "neutral"}>{r.status}</Badge>
+                          <Badge className="px-2 py-0.5 text-xs rounded-full" variant={r.status === "COMPLETED" ? "success" : "warning"}>{r.status}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="inline-flex items-center gap-2">
@@ -564,13 +605,13 @@ export default function AdminRunsIndexPage() {
                             </Button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button size="icon" variant="ghost">⋯</Button>
+                                <Button size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
                                     <DropdownMenuItem
-                                      variant="destructive"
+                                      className="text-destructive focus:text-destructive"
                                       onSelect={(e) => e.preventDefault()}
                                     >
                                       <Trash2 className="mr-2 h-4 w-4" /> Delete
@@ -585,7 +626,7 @@ export default function AdminRunsIndexPage() {
                                     </AlertDialogHeader>
                                     <div className="flex justify-end gap-2">
                                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => { setRuns((prev) => prev.filter((x) => x.id !== r.id)); toast.success("Run deleted."); }}>Delete</AlertDialogAction>
+                                      <AlertDialogAction onClick={() => handleDeleteRun(r.id)}>Delete</AlertDialogAction>
                                     </div>
                                   </AlertDialogContent>
                                 </AlertDialog>
