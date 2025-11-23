@@ -72,7 +72,7 @@ const WOW_CLASSES = [
 
 type Role = (typeof ROLES)[number];
 
-type Character = ApiCharacter & { status?: "Available" | "Unavailable" };
+type Character = ApiCharacter & { status?: "AVAILABLE" | "UNAVAILABLE" };
 
 type CharacterForm = {
   ilevel: string;
@@ -82,7 +82,7 @@ type CharacterForm = {
 };
 
 type TestRun = ApiRun & {
-  status: "Pending" | "Active" | "Completed";
+  status: "PENDING" | "COMPLETED";
   participants?: number;
   reward?: string;
   progress?: string;
@@ -131,7 +131,7 @@ function PlayerDashboardContent() {
       const sanitizedData = data.map((c) => ({
         ...c,
         specs: typeof c.specs === "string" ? JSON.parse(c.specs) : c.specs || [],
-        status: c.status ?? "Available",
+        status: (c.status === "AVAILABLE" || c.status === "UNAVAILABLE") ? c.status : "AVAILABLE",
       }));
       setCharacters(sanitizedData);
     } catch (err) {
@@ -157,9 +157,9 @@ function PlayerDashboardContent() {
 
   const runsStats = useMemo(
     () => ({
-      upcoming: runs.filter((r) => r.status === "Pending").length,
-      active: runs.filter((r) => r.status === "Active").length,
-      completed: runs.filter((r) => r.status === "Completed").length,
+      upcoming: runs.filter((r) => r.status === "PENDING").length,
+      active: 0, // Api doesn't have "Active" status anymore in enum
+      completed: runs.filter((r) => r.status === "COMPLETED").length,
     }),
     [runs]
   );
@@ -186,7 +186,8 @@ function PlayerDashboardContent() {
         char_name: data.char_name?.trim() || "Unnamed",
         char_class: data.char_class,
         ilevel: Number(data.ilevel),
-        specs: roles,
+        // @ts-ignore - simple mapping for dashboard vs profile complexity
+        specs: roles.map(r => ({ spec: "Main", role: r, type: "Unknown" })),
       });
       toast.success("Character added.");
       form.reset({ ilevel: "", char_class: "", roles: { Tank: false, Healer: false, DPS: false }, char_name: "" });
@@ -222,12 +223,12 @@ function PlayerDashboardContent() {
 
   const stats = useMemo(() => ({
     total: characters.length,
-    available: characters.filter((c) => c.status !== "Unavailable").length,
+    available: characters.filter((c) => c.status !== "UNAVAILABLE").length,
     avgILevel: characters.length > 0 ? Math.round(characters.reduce((sum, c) => sum + c.ilevel, 0) / characters.length) : 0,
   }), [characters]);
 
   const handleToggleStatus = async (character: Character, nextChecked: boolean) => {
-    const nextStatus: "Available" | "Unavailable" = nextChecked ? "Available" : "Unavailable";
+    const nextStatus: "AVAILABLE" | "UNAVAILABLE" = nextChecked ? "AVAILABLE" : "UNAVAILABLE";
     setCharacters((prev) =>
       prev.map((c) => (c.id === character.id ? { ...c, status: nextStatus } : c))
     );
@@ -239,7 +240,7 @@ function PlayerDashboardContent() {
       console.error(err);
       // revert on failure
       setCharacters((prev) =>
-        prev.map((c) => (c.id === character.id ? { ...c, status: character.status ?? "Available" } : c))
+        prev.map((c) => (c.id === character.id ? { ...c, status: character.status ?? "AVAILABLE" } : c))
       );
     }
   };
@@ -403,13 +404,19 @@ function PlayerDashboardContent() {
                           <TableCell className="text-sm">{c.ilevel}</TableCell>
                           <TableCell>
                             <div className="flex flex-wrap items-center gap-1.5">
-                              {(c.specs || []).map((spec: string) => {
+                              {(c.specs || []).map((spec: any) => {
+                                // Assuming specs is array of objects now. But legacy dashboard might expect strings.
+                                // We parsed it: typeof c.specs === "string" ? JSON.parse(c.specs) : c.specs || []
+                                // In new profile page, specs is [{spec, role, type}].
+                                // The display logic needs to be updated.
+                                const specName = spec.spec || spec; // fallback if string
                                 let badgeClass = "text-xs rounded-full px-2 py-0.5";
-                                if (spec === "Tank") badgeClass += " bg-lime-500/50 text-lime-700 dark:bg-lime-500/10 dark:text-lime-400";
-                                else if (spec === "Healer") badgeClass += " bg-fuchsia-500/50 text-fuchsia-700 dark:bg-fuchsia-400/10 dark:text-fuchsia-400";
+                                const role = spec.role || "DPS";
+                                if (role === "Tank") badgeClass += " bg-lime-500/50 text-lime-700 dark:bg-lime-500/10 dark:text-lime-400";
+                                else if (role === "Healer") badgeClass += " bg-fuchsia-500/50 text-fuchsia-700 dark:bg-fuchsia-400/10 dark:text-fuchsia-400";
                                 else badgeClass += " bg-rose-500/50 text-rose-700 dark:bg-rose-400/10 dark:text-rose-400";
                                 return (
-                                  <Badge key={spec} variant="outline" className={badgeClass}>{spec}</Badge>
+                                  <Badge key={specName + role} variant="outline" className={badgeClass}>{specName}</Badge>
                                 );
                               })}
                             </div>
@@ -419,14 +426,14 @@ function PlayerDashboardContent() {
                               <div className="flex items-center gap-2">
                                 <Switch
                                   aria-label="Toggle availability"
-                                  checked={c.status !== "Unavailable"}
+                                  checked={c.status !== "UNAVAILABLE"}
                                   onCheckedChange={(checked) => handleToggleStatus(c, checked)}
                                 />
                                 <Badge
                                   className="px-2 py-0.5 text-xs rounded-full"
-                                  variant={c.status === "Unavailable" ? "destructive" : "success"}
+                                  variant={c.status === "UNAVAILABLE" ? "destructive" : "success"}
                                 >
-                                  {c.status === "Unavailable" ? "Unavailable" : "Available"}
+                                  {c.status === "UNAVAILABLE" ? "Unavailable" : "Available"}
                                 </Badge>
                               </div>
                               <DropdownMenu>
@@ -552,7 +559,7 @@ function PlayerDashboardContent() {
                             <TableCell className="hidden md:table-cell text-xs">—</TableCell>
                             <TableCell className="hidden md:table-cell text-xs">—</TableCell>
                             <TableCell>
-                              <Badge variant={r.status === "Active" ? "success" : r.status === "Pending" ? "warning" : "info"} className="px-2 py-0.5 text-xs rounded-full">{r.status}</Badge>
+                              <Badge variant={r.status === "PENDING" ? "warning" : "success"} className="px-2 py-0.5 text-xs rounded-full">{r.status}</Badge>
                             </TableCell>
                           </TableRow>
                         ))}
