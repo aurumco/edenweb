@@ -496,7 +496,7 @@ export default function AdminRunDetailsPage() {
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2 space-y-2 pt-2 border-t border-border/10">
                         {filteredChars.map((c) => {
-                          const roleLabel = `(${c.roles.map(r => r[0]).join("/")})`;
+                          const roleLabel = `(${(c.roles || []).map(r => (r || "")[0]).join("/")})`;
                           const diffKey = difficulty === "Mythic" ? "M" : difficulty === "Heroic" ? "H" : "N";
                           const diffOrder: Array<["M"|"H"|"N", string]> = [["M","Mythic"],["H","Heroic"],["N","Normal"]];
                           const assigned = isAssigned(c.id);
@@ -557,7 +557,7 @@ export default function AdminRunDetailsPage() {
                             </CollapsibleTrigger>
                             <CollapsibleContent className="mt-2 space-y-2 pt-2 border-t border-border/10">
                               {s.characters.map((c) => {
-                                const roleLabel = `(${c.roles.map(r => r[0]).join("/")})`;
+                                const roleLabel = `(${(c.roles || []).map(r => (r || "")[0]).join("/")})`;
                                 const diffKey = difficulty === "Mythic" ? "M" : difficulty === "Heroic" ? "H" : "N";
                                 const diffOrder: Array<["M"|"H"|"N", string]> = [["M","Mythic"],["H","Heroic"],["N","Normal"]];
                                 const assigned = isAssigned(c.id);
