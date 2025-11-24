@@ -313,14 +313,14 @@ function PlayerDashboardContent() {
 
   const handleToggleLock = async (character: Character, difficulty: string) => {
     // Current state:
-    // We don't have explicit lock status from GET /api/characters in standard interface,
+    // We don't have explicit lock status from GET /api/characters in standard interface, 
     // but I added 'locks' array to type. I'll assume fetching fills it or I maintain it.
     // If not locked -> Lock it (Red).
     // If locked -> Unlock it (Green).
-
+    
     // Find current status
     const isLocked = character.locks?.some(l => l.difficulty === difficulty && l.status === "LOCKED");
-
+    
     const newStatus = isLocked ? "AVAILABLE" : "LOCKED";
     const oldLocks = character.locks || [];
 
@@ -610,13 +610,13 @@ function PlayerDashboardContent() {
                                     const locks = Array.isArray(c.locks) ? c.locks : [];
                                     const lock = locks.find(l => l.difficulty === diff);
                                     const isLocked = lock?.status === "LOCKED";
-                                    // Logic: Green (Available), Red (Locked).
+                                    // Logic: Green (Available), Red (Locked). 
                                     // Pending (Yellow) is hard to know without context of all runs, ignoring for now as user said "manually uncheck".
                                     const variant = isLocked ? "destructive" : "success";
-
+                                    
                                     return (
-                                        <Badge
-                                            key={diff}
+                                        <Badge 
+                                            key={diff} 
                                             variant={variant}
                                             className="cursor-pointer hover:opacity-80 transition-opacity text-[11px] px-1.5 py-0.5 font-semibold rounded-md"
                                             onClick={() => handleToggleLock(c, diff)}
