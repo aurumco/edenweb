@@ -365,12 +365,6 @@ export default function AdminRunDetailsPage() {
                   <DialogDescription>Configure and send the final roster to Discord.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label htmlFor="mention" className="text-sm font-medium">Mention all players</label>
-                      <Switch id="mention" defaultChecked />
-                    </div>
-                  </div>
                   <div className="flex justify-end gap-2">
                     <Button onClick={handleAnnounce}>Announce</Button>
                   </div>

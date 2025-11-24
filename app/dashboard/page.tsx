@@ -313,14 +313,14 @@ function PlayerDashboardContent() {
 
   const handleToggleLock = async (character: Character, difficulty: string) => {
     // Current state:
-    // We don't have explicit lock status from GET /api/characters in standard interface,
+    // We don't have explicit lock status from GET /api/characters in standard interface, 
     // but I added 'locks' array to type. I'll assume fetching fills it or I maintain it.
     // If not locked -> Lock it (Red).
     // If locked -> Unlock it (Green).
-
+    
     // Find current status
     const isLocked = character.locks?.some(l => l.difficulty === difficulty && l.status === "LOCKED");
-
+    
     const newStatus = isLocked ? "AVAILABLE" : "LOCKED";
     const oldLocks = character.locks || [];
 
@@ -386,7 +386,7 @@ function PlayerDashboardContent() {
     <PlayerShell>
       <div className="space-y-6">
         <Tabs value={tab} onValueChange={onTabChange} className="w-full">
-          <TabsList className="grid w-fit grid-cols-2 h-auto bg-transparent p-0 gap-2">
+          <TabsList className="grid w-fit grid-cols-2 h-auto bg-transparent p-0 gap-2 mb-4">
             <TabsTrigger value="characters" className="rounded-md px-3 py-1.5 text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary">Characters</TabsTrigger>
             <TabsTrigger value="runs" className="rounded-md px-3 py-1.5 text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary">My Runs</TabsTrigger>
           </TabsList>
@@ -394,27 +394,27 @@ function PlayerDashboardContent() {
           <TabsContent value="characters" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=inactive]:animate-out data-[state=inactive]:fade-out-0 duration-300 ease-out">
             {loadingChars ? (
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-                <Skeleton className="h-20 rounded-2xl" />
-                <Skeleton className="h-20 rounded-2xl" />
-                <Skeleton className="h-20 rounded-2xl" />
+                <Skeleton className="h-20 rounded-xl" />
+                <Skeleton className="h-20 rounded-xl" />
+                <Skeleton className="h-20 rounded-xl" />
               </div>
             ) : (
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-              <div className="rounded-2xl bg-card p-4">
+              <div className="rounded-xl bg-card p-4">
                 <div className="flex items-center justify-between mb-1">
                   <div className="text-2xl font-bold text-foreground">{stats.total}</div>
                   <div className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-md">Total</div>
                 </div>
                 <div className="text-xs text-muted-foreground">Characters</div>
               </div>
-              <div className="rounded-2xl bg-card p-4">
+              <div className="rounded-xl bg-card p-4">
                 <div className="flex items-center justify-between mb-1">
                   <div className="text-2xl font-bold text-foreground">{stats.avgILevel}</div>
                   <div className="text-xs font-medium text-sky-500 bg-sky-500/10 px-2 py-1 rounded-md">Average</div>
                 </div>
                 <div className="text-xs text-muted-foreground">iLevel</div>
               </div>
-              <div className="rounded-2xl bg-card p-4">
+              <div className="rounded-xl bg-card p-4">
                 <div className="flex items-center justify-between mb-1">
                   <div className="text-2xl font-bold text-foreground">{stats.available}</div>
                   <div className="text-xs font-medium text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-md">Available</div>
@@ -609,15 +609,15 @@ function PlayerDashboardContent() {
                                     const short = diff[0];
                                     const lock = c.locks?.find(l => l.difficulty === diff);
                                     const isLocked = lock?.status === "LOCKED";
-                                    // Logic: Green (Available), Red (Locked).
+                                    // Logic: Green (Available), Red (Locked). 
                                     // Pending (Yellow) is hard to know without context of all runs, ignoring for now as user said "manually uncheck".
                                     const variant = isLocked ? "destructive" : "success";
-
+                                    
                                     return (
-                                        <Badge
-                                            key={diff}
+                                        <Badge 
+                                            key={diff} 
                                             variant={variant}
-                                            className="cursor-pointer hover:opacity-80 transition-opacity w-6 h-6 p-0 flex items-center justify-center"
+                                            className="cursor-pointer hover:opacity-80 transition-opacity text-[11px] px-1.5 py-0.5 font-semibold rounded-md"
                                             onClick={() => handleToggleLock(c, diff)}
                                             title={`${diff}: ${isLocked ? "Locked" : "Available"}`}
                                         >
@@ -681,27 +681,27 @@ function PlayerDashboardContent() {
           <TabsContent value="runs" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=inactive]:animate-out data-[state=inactive]:fade-out-0 duration-300 ease-out">
             {loadingRuns ? (
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-                <Skeleton className="h-20 rounded-2xl" />
-                <Skeleton className="h-20 rounded-2xl" />
-                <Skeleton className="h-20 rounded-2xl" />
+                <Skeleton className="h-20 rounded-xl" />
+                <Skeleton className="h-20 rounded-xl" />
+                <Skeleton className="h-20 rounded-xl" />
               </div>
             ) : (
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-              <div className="rounded-2xl bg-card p-4">
+              <div className="rounded-xl bg-card p-4">
                 <div className="flex items-center justify-between mb-1">
                   <div className="text-2xl font-bold text-foreground">{runsStats.upcoming}</div>
                   <div className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-md">Upcoming</div>
                 </div>
                 <div className="text-xs text-muted-foreground">Scheduled</div>
               </div>
-              <div className="rounded-2xl bg-card p-4">
+              <div className="rounded-xl bg-card p-4">
                 <div className="flex items-center justify-between mb-1">
                   <div className="text-2xl font-bold text-foreground">{runsStats.active}</div>
                   <div className="text-xs font-medium text-sky-500 bg-sky-500/10 px-2 py-1 rounded-md">Active</div>
                 </div>
                 <div className="text-xs text-muted-foreground">In Progress</div>
               </div>
-              <div className="rounded-2xl bg-card p-4">
+              <div className="rounded-xl bg-card p-4">
                 <div className="flex items-center justify-between mb-1">
                   <div className="text-2xl font-bold text-foreground">{runsStats.completed}</div>
                   <div className="text-xs font-medium text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-md">Done</div>
