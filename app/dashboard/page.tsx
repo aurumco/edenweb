@@ -312,30 +312,31 @@ function PlayerDashboardContent() {
   }), [characters]);
 
   const handleToggleLock = async (character: Character, difficulty: string) => {
-    // Current state:
-    // We don't have explicit lock status from GET /api/characters in standard interface, 
-    // but I added 'locks' array to type. I'll assume fetching fills it or I maintain it.
-    // If not locked -> Lock it (Red).
-    // If locked -> Unlock it (Green).
+    // Current state (from locks object):
+    // locks: { Normal: "PENDING", Heroic: "LOCKED", ... }
     
-    // Find current status
-    const isLocked = character.locks?.some(l => l.difficulty === difficulty && l.status === "LOCKED");
+    const currentStatus = character.locks?.[difficulty] || "AVAILABLE";
     
-    const newStatus = isLocked ? "AVAILABLE" : "LOCKED";
-    const oldLocks = character.locks || [];
+    // Logic:
+    // If LOCKED -> Unlocks to AVAILABLE
+    // If AVAILABLE -> Locks to LOCKED
+    // If PENDING -> User can probably override to LOCKED or AVAILABLE. 
+    // Typically PENDING means signed up elsewhere. User said "manually uncheck" (disable).
+    // Let's assume toggle moves to LOCKED if not LOCKED, and AVAILABLE if LOCKED.
+    
+    const newStatus = currentStatus === "LOCKED" ? "AVAILABLE" : "LOCKED";
+    const oldLocks = { ...character.locks };
 
     // Optimistic update
     setCharacters(prev => prev.map(c => {
         if (c.id !== character.id) return c;
-        let newLocks = [...(c.locks || [])];
+        const newLocks = { ...(c.locks || {}) };
         if (newStatus === "LOCKED") {
-            // Add or update lock
-            const idx = newLocks.findIndex(l => l.difficulty === difficulty);
-            if (idx >= 0) newLocks[idx] = { difficulty, status: "LOCKED" };
-            else newLocks.push({ difficulty, status: "LOCKED" });
+             newLocks[difficulty] = "LOCKED";
         } else {
-            // Remove lock or set available
-            newLocks = newLocks.filter(l => l.difficulty !== difficulty);
+             // If unlocking, set to AVAILABLE. Note: API might remove the key or set to AVAILABLE.
+             // We'll set to AVAILABLE in UI.
+             newLocks[difficulty] = "AVAILABLE";
         }
         return { ...c, locks: newLocks };
     }));
@@ -607,12 +608,12 @@ function PlayerDashboardContent() {
                               <div className="flex items-center gap-1.5">
                                 {["Mythic", "Heroic", "Normal"].map((diff) => {
                                     const short = diff[0];
-                                    const locks = Array.isArray(c.locks) ? c.locks : [];
-                                    const lock = locks.find(l => l.difficulty === diff);
-                                    const isLocked = lock?.status === "LOCKED";
-                                    // Logic: Green (Available), Red (Locked). 
-                                    // Pending (Yellow) is hard to know without context of all runs, ignoring for now as user said "manually uncheck".
-                                    const variant = isLocked ? "destructive" : "success";
+                                    const status = c.locks?.[diff] || "AVAILABLE";
+                                    
+                                    // Logic: Green (Available), Red (Locked), Yellow (Pending)
+                                    let variant: "destructive" | "success" | "warning" = "success";
+                                    if (status === "LOCKED") variant = "destructive";
+                                    else if (status === "PENDING") variant = "warning";
                                     
                                     return (
                                         <Badge 
@@ -620,7 +621,7 @@ function PlayerDashboardContent() {
                                             variant={variant}
                                             className="cursor-pointer hover:opacity-80 transition-opacity text-[11px] px-1.5 py-0.5 font-semibold rounded-md"
                                             onClick={() => handleToggleLock(c, diff)}
-                                            title={`${diff}: ${isLocked ? "Locked" : "Available"}`}
+                                            title={`${diff}: ${status}`}
                                         >
                                             {short}
                                         </Badge>

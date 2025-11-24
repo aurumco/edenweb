@@ -108,20 +108,14 @@ export interface CharacterInput {
   specs: CharacterSpec[];
 }
 
-export interface CharacterLock {
-    difficulty: string;
-    status: "LOCKED" | "AVAILABLE";
-}
-
 export interface Character {
   id: string;
   char_name: string;
   char_class: string;
   ilevel: number;
   specs: CharacterSpec[];
-  // wcl_logs?: number; // Not in documented POST/GET response explicitly but implied by scenario "Log(int)"
   status?: "AVAILABLE" | "UNAVAILABLE"; 
-  locks?: CharacterLock[]; // Added for new manual lock system
+  locks?: Record<string, "AVAILABLE" | "PENDING" | "LOCKED">; // Updated to object map
 }
 
 export const characterApi = {
@@ -256,5 +250,8 @@ export const rosterApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
-  // No explicit remove endpoint. Maybe 'add' handles updates.
+  delete: (runId: string, characterId: string) =>
+    apiCall<void>(`/api/runs/${runId}/roster/${characterId}`, {
+      method: "DELETE"
+    }),
 };

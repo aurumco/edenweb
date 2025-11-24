@@ -294,7 +294,45 @@ export default function AdminRunDetailsPage() {
   }
 
   async function unassign(role: SlotRole, index: number) {
-    toast.error("Removing from roster is not supported by API yet.");
+    const slot = roster[role][index];
+    if (!slot) return;
+
+    // Optimistic remove
+    const prevRoster = { ...roster };
+    setRoster(prev => {
+        const next = { ...prev, [role]: [...prev[role]] } as typeof prev;
+        next[role][index] = null;
+        return next;
+    });
+
+    // Reset Character Status to Green (Available) or Yellow if pending elsewhere (complex, reverting to simple G)
+    // Actually, if we unassign, we don't know if they are pending elsewhere without re-fetching.
+    // For now, we can optimistically set to Green in the signups list for this run's difficulty.
+
+    try {
+        await rosterApi.delete(runId, slot.characterId);
+        toast.success("Removed from roster.");
+
+        // Update Signup Status
+        setSignups(prev => prev.map(s => ({
+            ...s,
+            characters: s.characters.map(c => {
+                if (c.id === slot.characterId) {
+                    const key = difficulty === "Mythic" ? "M" : difficulty === "Heroic" ? "H" : "N";
+                    const newStatus = { ...c.status };
+                    // @ts-ignore
+                    newStatus[key] = "G";
+                    return { ...c, status: newStatus };
+                }
+                return c;
+            })
+        })));
+
+    } catch (err) {
+        console.error(err);
+        toast.error("Failed to remove from roster");
+        setRoster(prevRoster);
+    }
   }
   
   async function handleCompleteRun() {
