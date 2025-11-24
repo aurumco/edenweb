@@ -365,12 +365,6 @@ export default function AdminRunDetailsPage() {
                   <DialogDescription>Configure and send the final roster to Discord.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label htmlFor="mention" className="text-sm font-medium">Mention all players</label>
-                      <Switch id="mention" defaultChecked />
-                    </div>
-                  </div>
                   <div className="flex justify-end gap-2">
                     <Button onClick={handleAnnounce}>Announce</Button>
                   </div>
@@ -496,7 +490,7 @@ export default function AdminRunDetailsPage() {
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2 space-y-2 pt-2 border-t border-border/10">
                         {filteredChars.map((c) => {
-                          const roleLabel = `(${c.roles.map(r => r[0]).join("/")})`;
+                          const roleLabel = `(${(c.roles || []).map(r => (r || "")[0]).join("/")})`;
                           const diffKey = difficulty === "Mythic" ? "M" : difficulty === "Heroic" ? "H" : "N";
                           const diffOrder: Array<["M"|"H"|"N", string]> = [["M","Mythic"],["H","Heroic"],["N","Normal"]];
                           const assigned = isAssigned(c.id);
@@ -557,7 +551,7 @@ export default function AdminRunDetailsPage() {
                             </CollapsibleTrigger>
                             <CollapsibleContent className="mt-2 space-y-2 pt-2 border-t border-border/10">
                               {s.characters.map((c) => {
-                                const roleLabel = `(${c.roles.map(r => r[0]).join("/")})`;
+                                const roleLabel = `(${(c.roles || []).map(r => (r || "")[0]).join("/")})`;
                                 const diffKey = difficulty === "Mythic" ? "M" : difficulty === "Heroic" ? "H" : "N";
                                 const diffOrder: Array<["M"|"H"|"N", string]> = [["M","Mythic"],["H","Heroic"],["N","Normal"]];
                                 const assigned = isAssigned(c.id);
