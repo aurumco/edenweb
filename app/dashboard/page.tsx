@@ -314,16 +314,16 @@ function PlayerDashboardContent() {
   const handleToggleLock = async (character: Character, difficulty: string) => {
     // Current state (from locks object):
     // locks: { Normal: "PENDING", Heroic: "LOCKED", ... }
-
+    
     const currentStatus = character.locks?.[difficulty] || "AVAILABLE";
-
+    
     // Logic:
     // If LOCKED -> Unlocks to AVAILABLE
     // If AVAILABLE -> Locks to LOCKED
-    // If PENDING -> User can probably override to LOCKED or AVAILABLE.
+    // If PENDING -> User can probably override to LOCKED or AVAILABLE. 
     // Typically PENDING means signed up elsewhere. User said "manually uncheck" (disable).
     // Let's assume toggle moves to LOCKED if not LOCKED, and AVAILABLE if LOCKED.
-
+    
     const newStatus = currentStatus === "LOCKED" ? "AVAILABLE" : "LOCKED";
     const oldLocks = { ...character.locks };
 
@@ -609,15 +609,15 @@ function PlayerDashboardContent() {
                                 {["Mythic", "Heroic", "Normal"].map((diff) => {
                                     const short = diff[0];
                                     const status = c.locks?.[diff] || "AVAILABLE";
-
+                                    
                                     // Logic: Green (Available), Red (Locked), Yellow (Pending)
                                     let variant: "destructive" | "success" | "warning" = "success";
                                     if (status === "LOCKED") variant = "destructive";
                                     else if (status === "PENDING") variant = "warning";
-
+                                    
                                     return (
-                                        <Badge
-                                            key={diff}
+                                        <Badge 
+                                            key={diff} 
                                             variant={variant}
                                             className="cursor-pointer hover:opacity-80 transition-opacity text-[11px] px-1.5 py-0.5 font-semibold rounded-md"
                                             onClick={() => handleToggleLock(c, diff)}
