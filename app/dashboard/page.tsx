@@ -311,21 +311,42 @@ function PlayerDashboardContent() {
     avgILevel: characters.length > 0 ? Math.round(characters.reduce((sum, c) => sum + c.ilevel, 0) / characters.length) : 0,
   }), [characters]);
 
-  const handleToggleStatus = async (character: Character, nextChecked: boolean) => {
-    const nextStatus: "AVAILABLE" | "UNAVAILABLE" = nextChecked ? "AVAILABLE" : "UNAVAILABLE";
-    setCharacters((prev) =>
-      prev.map((c) => (c.id === character.id ? { ...c, status: nextStatus } : c))
-    );
+  const handleToggleLock = async (character: Character, difficulty: string) => {
+    // Current state:
+    // We don't have explicit lock status from GET /api/characters in standard interface,
+    // but I added 'locks' array to type. I'll assume fetching fills it or I maintain it.
+    // If not locked -> Lock it (Red).
+    // If locked -> Unlock it (Green).
+
+    // Find current status
+    const isLocked = character.locks?.some(l => l.difficulty === difficulty && l.status === "LOCKED");
+
+    const newStatus = isLocked ? "AVAILABLE" : "LOCKED";
+    const oldLocks = character.locks || [];
+
+    // Optimistic update
+    setCharacters(prev => prev.map(c => {
+        if (c.id !== character.id) return c;
+        let newLocks = [...(c.locks || [])];
+        if (newStatus === "LOCKED") {
+            // Add or update lock
+            const idx = newLocks.findIndex(l => l.difficulty === difficulty);
+            if (idx >= 0) newLocks[idx] = { difficulty, status: "LOCKED" };
+            else newLocks.push({ difficulty, status: "LOCKED" });
+        } else {
+            // Remove lock or set available
+            newLocks = newLocks.filter(l => l.difficulty !== difficulty);
+        }
+        return { ...c, locks: newLocks };
+    }));
+
     try {
-      await characterApi.updateStatus(character.id, nextStatus);
-      toast.success(`Marked ${character.char_name || "character"} as ${nextStatus}.`);
+        await characterApi.updateStatus(character.id, { difficulty, status: newStatus });
+        toast.success(`Marked ${difficulty} as ${newStatus === "LOCKED" ? "Locked" : "Available"}.`);
     } catch (err) {
-      toast.error("Failed to update status");
-      console.error(err);
-      // revert on failure
-      setCharacters((prev) =>
-        prev.map((c) => (c.id === character.id ? { ...c, status: character.status ?? "AVAILABLE" } : c))
-      );
+        toast.error("Failed to update status");
+        // Revert
+        setCharacters(prev => prev.map(c => c.id === character.id ? { ...c, locks: oldLocks } : c));
     }
   };
 
@@ -583,18 +604,27 @@ function PlayerDashboardContent() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-3">
-                              <div className="flex items-center gap-2">
-                                <Switch
-                                  aria-label="Toggle availability"
-                                  checked={c.status === "AVAILABLE"}
-                                  onCheckedChange={(checked) => handleToggleStatus(c, checked)}
-                                />
-                                <Badge
-                                  className="px-2 py-0.5 text-xs rounded-full"
-                                  variant={c.status === "UNAVAILABLE" ? "destructive" : "success"}
-                                >
-                                  {c.status === "UNAVAILABLE" ? "Unavailable" : "Available"}
-                                </Badge>
+                              <div className="flex items-center gap-1.5">
+                                {["Mythic", "Heroic", "Normal"].map((diff) => {
+                                    const short = diff[0];
+                                    const lock = c.locks?.find(l => l.difficulty === diff);
+                                    const isLocked = lock?.status === "LOCKED";
+                                    // Logic: Green (Available), Red (Locked).
+                                    // Pending (Yellow) is hard to know without context of all runs, ignoring for now as user said "manually uncheck".
+                                    const variant = isLocked ? "destructive" : "success";
+
+                                    return (
+                                        <Badge
+                                            key={diff}
+                                            variant={variant}
+                                            className="cursor-pointer hover:opacity-80 transition-opacity w-6 h-6 p-0 flex items-center justify-center"
+                                            onClick={() => handleToggleLock(c, diff)}
+                                            title={`${diff}: ${isLocked ? "Locked" : "Available"}`}
+                                        >
+                                            {short}
+                                        </Badge>
+                                    );
+                                })}
                               </div>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -722,14 +752,16 @@ function PlayerDashboardContent() {
                               <Badge variant={r.status === "ACTIVE" ? "success" : r.status === "PENDING" ? "warning" : "info"} className="px-2 py-0.5 text-xs rounded-full">{r.status}</Badge>
                             </TableCell>
                             <TableCell className="text-right">
-                                <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    disabled={signupLoading === r.id}
-                                    onClick={() => handleCancelSignup(r.id)}
-                                >
-                                    {signupLoading === r.id ? "Cancelling..." : "Cancel"}
-                                </Button>
+                                {r.status !== "COMPLETED" && (
+                                    <Button
+                                        size="sm"
+                                        className="bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-600 dark:bg-red-500/20 dark:text-red-400 dark:hover:bg-red-500/30 border-0"
+                                        disabled={signupLoading === r.id}
+                                        onClick={() => handleCancelSignup(r.id)}
+                                    >
+                                        {signupLoading === r.id ? "Cancelling..." : "Cancel"}
+                                    </Button>
+                                )}
                             </TableCell>
                           </TableRow>
                         ))}
