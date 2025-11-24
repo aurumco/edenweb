@@ -20,6 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -615,12 +616,20 @@ function PlayerDashboardContent() {
                                     if (status === "LOCKED") variant = "destructive";
                                     else if (status === "PENDING") variant = "warning";
                                     
+                                    // Allow Green <-> Red. Disable Yellow.
+                                    const canToggle = status !== "PENDING";
+                                    
                                     return (
                                         <Badge 
                                             key={diff} 
                                             variant={variant}
-                                            className="cursor-pointer hover:opacity-80 transition-opacity text-[11px] px-1.5 py-0.5 font-semibold rounded-md"
-                                            onClick={() => handleToggleLock(c, diff)}
+                                            className={cn(
+                                                "text-[11px] px-1.5 py-0.5 font-semibold rounded-md transition-opacity",
+                                                canToggle ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed opacity-70"
+                                            )}
+                                            onClick={() => {
+                                                if (canToggle) handleToggleLock(c, diff);
+                                            }}
                                             title={`${diff}: ${status}`}
                                         >
                                             {short}
