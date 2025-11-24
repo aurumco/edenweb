@@ -294,7 +294,45 @@ export default function AdminRunDetailsPage() {
   }
 
   async function unassign(role: SlotRole, index: number) {
-    toast.error("Removing from roster is not supported by API yet.");
+    const slot = roster[role][index];
+    if (!slot) return;
+
+    // Optimistic remove
+    const prevRoster = { ...roster };
+    setRoster(prev => {
+        const next = { ...prev, [role]: [...prev[role]] } as typeof prev;
+        next[role][index] = null;
+        return next;
+    });
+
+    // Reset Character Status to Green (Available) or Yellow if pending elsewhere (complex, reverting to simple G)
+    // Actually, if we unassign, we don't know if they are pending elsewhere without re-fetching.
+    // For now, we can optimistically set to Green in the signups list for this run's difficulty.
+
+    try {
+        await rosterApi.delete(runId, slot.characterId);
+        toast.success("Removed from roster.");
+
+        // Update Signup Status
+        setSignups(prev => prev.map(s => ({
+            ...s,
+            characters: s.characters.map(c => {
+                if (c.id === slot.characterId) {
+                    const key = difficulty === "Mythic" ? "M" : difficulty === "Heroic" ? "H" : "N";
+                    const newStatus = { ...c.status };
+                    // @ts-ignore
+                    newStatus[key] = "G";
+                    return { ...c, status: newStatus };
+                }
+                return c;
+            })
+        })));
+
+    } catch (err) {
+        console.error(err);
+        toast.error("Failed to remove from roster");
+        setRoster(prevRoster);
+    }
   }
   
   async function handleCompleteRun() {
@@ -357,7 +395,7 @@ export default function AdminRunDetailsPage() {
           <div className="flex items-center gap-2">
             <Dialog>
               <DialogTrigger asChild>
-                <Button variant="secondary">Announce Roster</Button>
+                <Button variant="secondary" className="bg-zinc-800 text-zinc-100 hover:bg-zinc-700 border border-zinc-700/50">Announce Roster</Button>
               </DialogTrigger>
               <DialogContent className="max-w-md bg-card">
                 <DialogHeader>
@@ -365,12 +403,6 @@ export default function AdminRunDetailsPage() {
                   <DialogDescription>Configure and send the final roster to Discord.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label htmlFor="mention" className="text-sm font-medium">Mention all players</label>
-                      <Switch id="mention" defaultChecked />
-                    </div>
-                  </div>
                   <div className="flex justify-end gap-2">
                     <Button onClick={handleAnnounce}>Announce</Button>
                   </div>
@@ -379,7 +411,7 @@ export default function AdminRunDetailsPage() {
             </Dialog>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button className="bg-green-600/10 text-green-500 hover:bg-green-600/30 border-0">Complete Run</Button>
+                <Button className="bg-green-600/10 text-green-500 hover:bg-green-600/30 border-0">Complete</Button>
               </AlertDialogTrigger>
               <AlertDialogContent className="bg-card">
                 <AlertDialogHeader>
@@ -496,7 +528,7 @@ export default function AdminRunDetailsPage() {
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2 space-y-2 pt-2 border-t border-border/10">
                         {filteredChars.map((c) => {
-                          const roleLabel = `(${c.roles.map(r => r[0]).join("/")})`;
+                          const roleLabel = `(${(c.roles || []).map(r => (r || "")[0]).join("/")})`;
                           const diffKey = difficulty === "Mythic" ? "M" : difficulty === "Heroic" ? "H" : "N";
                           const diffOrder: Array<["M"|"H"|"N", string]> = [["M","Mythic"],["H","Heroic"],["N","Normal"]];
                           const assigned = isAssigned(c.id);
@@ -557,7 +589,7 @@ export default function AdminRunDetailsPage() {
                             </CollapsibleTrigger>
                             <CollapsibleContent className="mt-2 space-y-2 pt-2 border-t border-border/10">
                               {s.characters.map((c) => {
-                                const roleLabel = `(${c.roles.map(r => r[0]).join("/")})`;
+                                const roleLabel = `(${(c.roles || []).map(r => (r || "")[0]).join("/")})`;
                                 const diffKey = difficulty === "Mythic" ? "M" : difficulty === "Heroic" ? "H" : "N";
                                 const diffOrder: Array<["M"|"H"|"N", string]> = [["M","Mythic"],["H","Heroic"],["N","Normal"]];
                                 const assigned = isAssigned(c.id);

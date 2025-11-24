@@ -311,21 +311,43 @@ function PlayerDashboardContent() {
     avgILevel: characters.length > 0 ? Math.round(characters.reduce((sum, c) => sum + c.ilevel, 0) / characters.length) : 0,
   }), [characters]);
 
-  const handleToggleStatus = async (character: Character, nextChecked: boolean) => {
-    const nextStatus: "AVAILABLE" | "UNAVAILABLE" = nextChecked ? "AVAILABLE" : "UNAVAILABLE";
-    setCharacters((prev) =>
-      prev.map((c) => (c.id === character.id ? { ...c, status: nextStatus } : c))
-    );
+  const handleToggleLock = async (character: Character, difficulty: string) => {
+    // Current state (from locks object):
+    // locks: { Normal: "PENDING", Heroic: "LOCKED", ... }
+
+    const currentStatus = character.locks?.[difficulty] || "AVAILABLE";
+
+    // Logic:
+    // If LOCKED -> Unlocks to AVAILABLE
+    // If AVAILABLE -> Locks to LOCKED
+    // If PENDING -> User can probably override to LOCKED or AVAILABLE.
+    // Typically PENDING means signed up elsewhere. User said "manually uncheck" (disable).
+    // Let's assume toggle moves to LOCKED if not LOCKED, and AVAILABLE if LOCKED.
+
+    const newStatus = currentStatus === "LOCKED" ? "AVAILABLE" : "LOCKED";
+    const oldLocks = { ...character.locks };
+
+    // Optimistic update
+    setCharacters(prev => prev.map(c => {
+        if (c.id !== character.id) return c;
+        const newLocks = { ...(c.locks || {}) };
+        if (newStatus === "LOCKED") {
+             newLocks[difficulty] = "LOCKED";
+        } else {
+             // If unlocking, set to AVAILABLE. Note: API might remove the key or set to AVAILABLE.
+             // We'll set to AVAILABLE in UI.
+             newLocks[difficulty] = "AVAILABLE";
+        }
+        return { ...c, locks: newLocks };
+    }));
+
     try {
-      await characterApi.updateStatus(character.id, nextStatus);
-      toast.success(`Marked ${character.char_name || "character"} as ${nextStatus}.`);
+        await characterApi.updateStatus(character.id, { difficulty, status: newStatus });
+        toast.success(`Marked ${difficulty} as ${newStatus === "LOCKED" ? "Locked" : "Available"}.`);
     } catch (err) {
-      toast.error("Failed to update status");
-      console.error(err);
-      // revert on failure
-      setCharacters((prev) =>
-        prev.map((c) => (c.id === character.id ? { ...c, status: character.status ?? "AVAILABLE" } : c))
-      );
+        toast.error("Failed to update status");
+        // Revert
+        setCharacters(prev => prev.map(c => c.id === character.id ? { ...c, locks: oldLocks } : c));
     }
   };
 
@@ -365,7 +387,7 @@ function PlayerDashboardContent() {
     <PlayerShell>
       <div className="space-y-6">
         <Tabs value={tab} onValueChange={onTabChange} className="w-full">
-          <TabsList className="grid w-fit grid-cols-2 h-auto bg-transparent p-0 gap-2">
+          <TabsList className="grid w-fit grid-cols-2 h-auto bg-transparent p-0 gap-2 mb-4">
             <TabsTrigger value="characters" className="rounded-md px-3 py-1.5 text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary">Characters</TabsTrigger>
             <TabsTrigger value="runs" className="rounded-md px-3 py-1.5 text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary">My Runs</TabsTrigger>
           </TabsList>
@@ -373,27 +395,27 @@ function PlayerDashboardContent() {
           <TabsContent value="characters" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=inactive]:animate-out data-[state=inactive]:fade-out-0 duration-300 ease-out">
             {loadingChars ? (
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-                <Skeleton className="h-20 rounded-2xl" />
-                <Skeleton className="h-20 rounded-2xl" />
-                <Skeleton className="h-20 rounded-2xl" />
+                <Skeleton className="h-20 rounded-xl" />
+                <Skeleton className="h-20 rounded-xl" />
+                <Skeleton className="h-20 rounded-xl" />
               </div>
             ) : (
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-              <div className="rounded-2xl bg-card p-4">
+              <div className="rounded-xl bg-card p-4">
                 <div className="flex items-center justify-between mb-1">
                   <div className="text-2xl font-bold text-foreground">{stats.total}</div>
                   <div className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-md">Total</div>
                 </div>
                 <div className="text-xs text-muted-foreground">Characters</div>
               </div>
-              <div className="rounded-2xl bg-card p-4">
+              <div className="rounded-xl bg-card p-4">
                 <div className="flex items-center justify-between mb-1">
                   <div className="text-2xl font-bold text-foreground">{stats.avgILevel}</div>
                   <div className="text-xs font-medium text-sky-500 bg-sky-500/10 px-2 py-1 rounded-md">Average</div>
                 </div>
                 <div className="text-xs text-muted-foreground">iLevel</div>
               </div>
-              <div className="rounded-2xl bg-card p-4">
+              <div className="rounded-xl bg-card p-4">
                 <div className="flex items-center justify-between mb-1">
                   <div className="text-2xl font-bold text-foreground">{stats.available}</div>
                   <div className="text-xs font-medium text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-md">Available</div>
@@ -583,18 +605,28 @@ function PlayerDashboardContent() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-3">
-                              <div className="flex items-center gap-2">
-                                <Switch
-                                  aria-label="Toggle availability"
-                                  checked={c.status === "AVAILABLE"}
-                                  onCheckedChange={(checked) => handleToggleStatus(c, checked)}
-                                />
-                                <Badge
-                                  className="px-2 py-0.5 text-xs rounded-full"
-                                  variant={c.status === "UNAVAILABLE" ? "destructive" : "success"}
-                                >
-                                  {c.status === "UNAVAILABLE" ? "Unavailable" : "Available"}
-                                </Badge>
+                              <div className="flex items-center gap-1.5">
+                                {["Mythic", "Heroic", "Normal"].map((diff) => {
+                                    const short = diff[0];
+                                    const status = c.locks?.[diff] || "AVAILABLE";
+
+                                    // Logic: Green (Available), Red (Locked), Yellow (Pending)
+                                    let variant: "destructive" | "success" | "warning" = "success";
+                                    if (status === "LOCKED") variant = "destructive";
+                                    else if (status === "PENDING") variant = "warning";
+
+                                    return (
+                                        <Badge
+                                            key={diff}
+                                            variant={variant}
+                                            className="cursor-pointer hover:opacity-80 transition-opacity text-[11px] px-1.5 py-0.5 font-semibold rounded-md"
+                                            onClick={() => handleToggleLock(c, diff)}
+                                            title={`${diff}: ${status}`}
+                                        >
+                                            {short}
+                                        </Badge>
+                                    );
+                                })}
                               </div>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -651,27 +683,27 @@ function PlayerDashboardContent() {
           <TabsContent value="runs" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=inactive]:animate-out data-[state=inactive]:fade-out-0 duration-300 ease-out">
             {loadingRuns ? (
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-                <Skeleton className="h-20 rounded-2xl" />
-                <Skeleton className="h-20 rounded-2xl" />
-                <Skeleton className="h-20 rounded-2xl" />
+                <Skeleton className="h-20 rounded-xl" />
+                <Skeleton className="h-20 rounded-xl" />
+                <Skeleton className="h-20 rounded-xl" />
               </div>
             ) : (
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-              <div className="rounded-2xl bg-card p-4">
+              <div className="rounded-xl bg-card p-4">
                 <div className="flex items-center justify-between mb-1">
                   <div className="text-2xl font-bold text-foreground">{runsStats.upcoming}</div>
                   <div className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-md">Upcoming</div>
                 </div>
                 <div className="text-xs text-muted-foreground">Scheduled</div>
               </div>
-              <div className="rounded-2xl bg-card p-4">
+              <div className="rounded-xl bg-card p-4">
                 <div className="flex items-center justify-between mb-1">
                   <div className="text-2xl font-bold text-foreground">{runsStats.active}</div>
                   <div className="text-xs font-medium text-sky-500 bg-sky-500/10 px-2 py-1 rounded-md">Active</div>
                 </div>
                 <div className="text-xs text-muted-foreground">In Progress</div>
               </div>
-              <div className="rounded-2xl bg-card p-4">
+              <div className="rounded-xl bg-card p-4">
                 <div className="flex items-center justify-between mb-1">
                   <div className="text-2xl font-bold text-foreground">{runsStats.completed}</div>
                   <div className="text-xs font-medium text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-md">Done</div>
@@ -719,17 +751,19 @@ function PlayerDashboardContent() {
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">{new Date(r.scheduled_at).toLocaleDateString('en-GB', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-')}</TableCell>
                             <TableCell>
-                              <Badge variant={r.status === "ACTIVE" ? "success" : r.status === "PENDING" ? "warning" : "info"} className="px-2 py-0.5 text-xs rounded-full">{r.status}</Badge>
+                              <Badge variant={r.status === "ACTIVE" ? "success" : r.status === "PENDING" ? "warning" : "info"} className="px-2 py-0.5 text-xs rounded-full">{r.status.charAt(0).toUpperCase() + r.status.slice(1).toLowerCase()}</Badge>
                             </TableCell>
                             <TableCell className="text-right">
-                                <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    disabled={signupLoading === r.id}
-                                    onClick={() => handleCancelSignup(r.id)}
-                                >
-                                    {signupLoading === r.id ? "Cancelling..." : "Cancel"}
-                                </Button>
+                                {r.status !== "COMPLETED" && (
+                                    <Button
+                                        size="sm"
+                                        className="bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-600 dark:bg-red-500/20 dark:text-red-400 dark:hover:bg-red-500/30 border-0"
+                                        disabled={signupLoading === r.id}
+                                        onClick={() => handleCancelSignup(r.id)}
+                                    >
+                                        {signupLoading === r.id ? "Cancelling..." : "Cancel"}
+                                    </Button>
+                                )}
                             </TableCell>
                           </TableRow>
                         ))}
