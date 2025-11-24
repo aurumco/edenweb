@@ -36,7 +36,7 @@ import { Plus, Calendar as CalendarIcon, Clock as ClockIcon, Copy, FileDown, Tra
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input as TextInput } from "@/components/ui/input";
 import { format } from "date-fns";
-import { runApi, Run as ApiRun } from "@/lib/api";
+import { runApi, statsApi, Run as ApiRun } from "@/lib/api";
 
 const DIFFICULTIES = ["Mythic", "Heroic", "Normal"] as const;
 
@@ -62,6 +62,7 @@ const SERVER_ID = process.env.NEXT_PUBLIC_SERVER_ID || "980165146762674186";
 export default function AdminRunsIndexPage() {
   const { user, loading: authLoading } = useAuth();
   const [runs, setRuns] = useState<Run[]>([]);
+  const [globalStats, setGlobalStats] = useState<{ total_players: number; active_runs: number } | null>(null);
   const [search, setSearch] = useState("");
   const [filterDifficulty, setFilterDifficulty] = useState<Difficulty | "All">("All");
   const [filterStatus, setFilterStatus] = useState<"PENDING" | "ACTIVE" | "COMPLETED" | "All">("All");
@@ -92,17 +93,21 @@ export default function AdminRunsIndexPage() {
   // Fetch runs on mount
   useEffect(() => {
     if (!authLoading && user) {
-      fetchRuns();
+      fetchData();
     }
   }, [authLoading, user]);
 
-  const fetchRuns = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const data = await runApi.list(SERVER_ID);
-      setRuns(data);
+      const [runsData, statsData] = await Promise.all([
+          runApi.list(SERVER_ID),
+          statsApi.get()
+      ]);
+      setRuns(runsData);
+      setGlobalStats(statsData);
     } catch (err) {
-      toast.error("Failed to load runs");
+      toast.error("Failed to load data");
       console.error(err);
     } finally {
       setLoading(false);
@@ -156,7 +161,7 @@ export default function AdminRunsIndexPage() {
         embed_text: "",
       });
       setScheduleTab("date");
-      await fetchRuns();
+      await fetchData();
     } catch (err) {
       toast.error("Failed to create run");
       console.error(err);
@@ -185,6 +190,8 @@ export default function AdminRunsIndexPage() {
     return `${day}-${month}, ${hour}:${minute}`;
   };
 
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+
   const filteredRuns = useMemo(() => {
     return runs.filter((r) => {
       const okSearch = r.title.toLowerCase().includes(search.toLowerCase());
@@ -200,12 +207,27 @@ export default function AdminRunsIndexPage() {
   }, [filteredRuns, page]);
 
   const stats = useMemo(() => {
-    const active = runs.filter((r) => r.status === "ACTIVE").length;
+    // Keep local stats calculation for the cards that rely on run list filtering/status if needed,
+    // but the prompt says "Use api/stats for the top information".
+    // The previous implementation used filtered counts from 'runs'.
+    // I will replace the main cards with global stats where applicable, or keep them if they represent something else.
+    // The user said "info written at the top is wrong. Use /api/stats".
+    // /api/stats returns { total_players, active_runs }.
+    // The UI has: Active Runs, Pending Runs, Completed Runs, Players.
+    // I will map active_runs to Active.
+    // I will map total_players to Players.
+    // For Pending and Completed, I will still use the local runs list calculation as the API doesn't seem to provide them explicitly (only active_runs).
+
     const pending = runs.filter((r) => r.status === "PENDING").length;
     const completed = runs.filter((r) => r.status === "COMPLETED").length;
-    const capacity = runs.reduce((acc, r) => acc + r.tank_capacity + r.healer_capacity + r.dps_capacity, 0);
-    return { active, pending, completed, capacity };
-  }, [runs]);
+
+    return {
+        active: globalStats?.active_runs ?? 0,
+        pending,
+        completed,
+        players: globalStats?.total_players ?? 0
+    };
+  }, [runs, globalStats]);
 
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), 250);
@@ -490,33 +512,33 @@ export default function AdminRunsIndexPage() {
             </>
           ) : (
           <>
-          <div className="rounded-2xl bg-card p-4">
+          <div className="rounded-xl bg-card p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="text-2xl font-bold text-foreground">{stats.active}</div>
               <div className="text-xs font-medium text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-md">Active</div>
             </div>
-            <div className="text-xs text-muted-foreground">Runs</div>
+            <div className="text-xs text-muted-foreground">Active/Pending Runs</div>
           </div>
-          <div className="rounded-2xl bg-card p-4">
+          <div className="rounded-xl bg-card p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="text-2xl font-bold text-foreground">{stats.pending}</div>
               <div className="text-xs font-medium text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md">Pending</div>
             </div>
-            <div className="text-xs text-muted-foreground">Waiting</div>
+            <div className="text-xs text-muted-foreground">This Server</div>
           </div>
-          <div className="rounded-2xl bg-card p-4">
+          <div className="rounded-xl bg-card p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="text-2xl font-bold text-foreground">{stats.completed}</div>
               <div className="text-xs font-medium text-sky-500 bg-sky-500/10 px-2 py-1 rounded-md">Done</div>
             </div>
             <div className="text-xs text-muted-foreground">Completed</div>
           </div>
-          <div className="rounded-2xl bg-card p-4">
+          <div className="rounded-xl bg-card p-4">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-2xl font-bold text-foreground">12</div>
+              <div className="text-2xl font-bold text-foreground">{stats.players}</div>
               <div className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-md">Players</div>
             </div>
-            <div className="text-xs text-muted-foreground">Total</div>
+            <div className="text-xs text-muted-foreground">Total Registered</div>
           </div>
           </>
           )}
@@ -590,7 +612,7 @@ export default function AdminRunsIndexPage() {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{formatUTC(r.scheduled_at)}</TableCell>
                         <TableCell className="hidden md:table-cell">
-                          <Badge className="px-2 py-0.5 text-xs rounded-full" variant={r.status === "ACTIVE" ? "success" : r.status === "PENDING" ? "warning" : "neutral"}>{r.status}</Badge>
+                          <Badge className="px-2 py-0.5 text-xs rounded-full" variant={r.status === "ACTIVE" ? "success" : r.status === "PENDING" ? "warning" : "neutral"}>{capitalize(r.status)}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="inline-flex items-center gap-2">
