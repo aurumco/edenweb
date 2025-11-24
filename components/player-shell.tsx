@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/components/auth-provider";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 const logoFont = Momo_Signature({ subsets: ["latin"], weight: "400" });
 
@@ -17,6 +18,7 @@ export function PlayerShell({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   const handleLogout = async () => {
+    toast.info("Logging out...", { duration: 1500 });
     await logout();
     router.push("/login");
   };

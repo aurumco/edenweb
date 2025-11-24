@@ -76,6 +76,15 @@ export interface UserProfile {
   aliases: string[];
 }
 
+export interface DashboardStats {
+    total_players: number;
+    active_runs: number;
+}
+
+export const statsApi = {
+    get: () => apiCall<DashboardStats>("/api/stats")
+};
+
 export const authApi = {
   getMe: () => apiCall<AuthUser>("/api/auth/me"),
   login: () => {
@@ -105,8 +114,8 @@ export interface Character {
   char_class: string;
   ilevel: number;
   specs: CharacterSpec[];
-  // wcl_logs?: number; // Not in documented POST/GET response explicitly but implied by scenario "Log(int)"
   status?: "AVAILABLE" | "UNAVAILABLE"; 
+  locks?: Record<string, "AVAILABLE" | "PENDING" | "LOCKED">; // Updated to object map
 }
 
 export const characterApi = {
@@ -123,10 +132,10 @@ export const characterApi = {
       method: "PATCH", 
       body: JSON.stringify(data),
     }),
-  updateStatus: (id: string, status: "AVAILABLE" | "UNAVAILABLE") =>
+  updateStatus: (id: string, payload: { status: "AVAILABLE" | "UNAVAILABLE" } | { difficulty: string, status: "LOCKED" | "AVAILABLE" }) =>
     apiCall<Character>(`/api/characters/${id}/status`, {
       method: "PATCH",
-      body: JSON.stringify({ status }),
+      body: JSON.stringify(payload),
     }),
   delete: (id: string) =>
     apiCall<void>(`/api/characters/${id}`, { method: "DELETE" }),
@@ -241,5 +250,8 @@ export const rosterApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
-  // No explicit remove endpoint. Maybe 'add' handles updates.
+  delete: (runId: string, characterId: string) =>
+    apiCall<void>(`/api/runs/${runId}/roster/${characterId}`, {
+      method: "DELETE"
+    }),
 };

@@ -7,10 +7,22 @@ import { Momo_Signature } from "next/font/google";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LogOut } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/components/auth-provider";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 const logoFont = Momo_Signature({ subsets: ["latin"], weight: "400" });
 
 export function AdminShell({ children }: { children: ReactNode }) {
+  const { logout } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    toast.info("Logging out...", { duration: 1500 });
+    await logout();
+    router.push("/login");
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/40">
@@ -53,7 +65,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem variant="destructive">
+                <DropdownMenuItem variant="destructive" onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Log Out
                 </DropdownMenuItem>
