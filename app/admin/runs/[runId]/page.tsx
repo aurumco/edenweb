@@ -357,7 +357,7 @@ export default function AdminRunDetailsPage() {
           <div className="flex items-center gap-2">
             <Dialog>
               <DialogTrigger asChild>
-                <Button variant="secondary">Announce Roster</Button>
+                <Button variant="secondary" className="bg-zinc-800 text-zinc-100 hover:bg-zinc-700 border border-zinc-700/50">Announce Roster</Button>
               </DialogTrigger>
               <DialogContent className="max-w-md bg-card">
                 <DialogHeader>
@@ -373,7 +373,7 @@ export default function AdminRunDetailsPage() {
             </Dialog>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button className="bg-green-600/10 text-green-500 hover:bg-green-600/30 border-0">Complete Run</Button>
+                <Button className="bg-green-600/10 text-green-500 hover:bg-green-600/30 border-0">Complete</Button>
               </AlertDialogTrigger>
               <AlertDialogContent className="bg-card">
                 <AlertDialogHeader>

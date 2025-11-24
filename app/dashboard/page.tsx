@@ -607,7 +607,8 @@ function PlayerDashboardContent() {
                               <div className="flex items-center gap-1.5">
                                 {["Mythic", "Heroic", "Normal"].map((diff) => {
                                     const short = diff[0];
-                                    const lock = c.locks?.find(l => l.difficulty === diff);
+                                    const locks = Array.isArray(c.locks) ? c.locks : [];
+                                    const lock = locks.find(l => l.difficulty === diff);
                                     const isLocked = lock?.status === "LOCKED";
                                     // Logic: Green (Available), Red (Locked). 
                                     // Pending (Yellow) is hard to know without context of all runs, ignoring for now as user said "manually uncheck".
@@ -749,7 +750,7 @@ function PlayerDashboardContent() {
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">{new Date(r.scheduled_at).toLocaleDateString('en-GB', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-')}</TableCell>
                             <TableCell>
-                              <Badge variant={r.status === "ACTIVE" ? "success" : r.status === "PENDING" ? "warning" : "info"} className="px-2 py-0.5 text-xs rounded-full">{r.status}</Badge>
+                              <Badge variant={r.status === "ACTIVE" ? "success" : r.status === "PENDING" ? "warning" : "info"} className="px-2 py-0.5 text-xs rounded-full">{r.status.charAt(0).toUpperCase() + r.status.slice(1).toLowerCase()}</Badge>
                             </TableCell>
                             <TableCell className="text-right">
                                 {r.status !== "COMPLETED" && (

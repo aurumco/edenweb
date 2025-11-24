@@ -190,6 +190,8 @@ export default function AdminRunsIndexPage() {
     return `${day}-${month}, ${hour}:${minute}`;
   };
 
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+
   const filteredRuns = useMemo(() => {
     return runs.filter((r) => {
       const okSearch = r.title.toLowerCase().includes(search.toLowerCase());
@@ -510,28 +512,28 @@ export default function AdminRunsIndexPage() {
             </>
           ) : (
           <>
-          <div className="rounded-2xl bg-card p-4">
+          <div className="rounded-xl bg-card p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="text-2xl font-bold text-foreground">{stats.active}</div>
               <div className="text-xs font-medium text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-md">Active</div>
             </div>
             <div className="text-xs text-muted-foreground">Active/Pending Runs</div>
           </div>
-          <div className="rounded-2xl bg-card p-4">
+          <div className="rounded-xl bg-card p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="text-2xl font-bold text-foreground">{stats.pending}</div>
               <div className="text-xs font-medium text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md">Pending</div>
             </div>
             <div className="text-xs text-muted-foreground">This Server</div>
           </div>
-          <div className="rounded-2xl bg-card p-4">
+          <div className="rounded-xl bg-card p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="text-2xl font-bold text-foreground">{stats.completed}</div>
               <div className="text-xs font-medium text-sky-500 bg-sky-500/10 px-2 py-1 rounded-md">Done</div>
             </div>
             <div className="text-xs text-muted-foreground">Completed</div>
           </div>
-          <div className="rounded-2xl bg-card p-4">
+          <div className="rounded-xl bg-card p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="text-2xl font-bold text-foreground">{stats.players}</div>
               <div className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-md">Players</div>
@@ -610,7 +612,7 @@ export default function AdminRunsIndexPage() {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{formatUTC(r.scheduled_at)}</TableCell>
                         <TableCell className="hidden md:table-cell">
-                          <Badge className="px-2 py-0.5 text-xs rounded-full" variant={r.status === "ACTIVE" ? "success" : r.status === "PENDING" ? "warning" : "neutral"}>{r.status}</Badge>
+                          <Badge className="px-2 py-0.5 text-xs rounded-full" variant={r.status === "ACTIVE" ? "success" : r.status === "PENDING" ? "warning" : "neutral"}>{capitalize(r.status)}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="inline-flex items-center gap-2">
