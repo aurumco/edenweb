@@ -296,7 +296,7 @@ export default function AdminRunDetailsPage() {
   async function unassign(role: SlotRole, index: number) {
     const slot = roster[role][index];
     if (!slot) return;
-
+    
     // Optimistic remove
     const prevRoster = { ...roster };
     setRoster(prev => {
@@ -304,15 +304,15 @@ export default function AdminRunDetailsPage() {
         next[role][index] = null;
         return next;
     });
-
+    
     // Reset Character Status to Green (Available) or Yellow if pending elsewhere (complex, reverting to simple G)
     // Actually, if we unassign, we don't know if they are pending elsewhere without re-fetching.
     // For now, we can optimistically set to Green in the signups list for this run's difficulty.
-
+    
     try {
         await rosterApi.delete(runId, slot.characterId);
         toast.success("Removed from roster.");
-
+        
         // Update Signup Status
         setSignups(prev => prev.map(s => ({
             ...s,
@@ -327,7 +327,7 @@ export default function AdminRunDetailsPage() {
                 return c;
             })
         })));
-
+        
     } catch (err) {
         console.error(err);
         toast.error("Failed to remove from roster");
@@ -411,7 +411,7 @@ export default function AdminRunDetailsPage() {
             </Dialog>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button
+                <Button 
                     disabled={run?.status === "COMPLETED"}
                     className="bg-green-600/10 text-green-500 hover:bg-green-600/30 border-0 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
