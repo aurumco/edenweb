@@ -179,7 +179,7 @@ export default function ProfilePage() {
                 {(profile.finance.currentBalance / 1000).toFixed(1)}K
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {profile.finance.currentBalance.toLocaleString()} USDT
+                {profile.finance.currentBalance.toLocaleString()} GOLD
               </p>
             </CardContent>
           </Card>
@@ -197,7 +197,7 @@ export default function ProfilePage() {
                 {(profile.finance.pendingEscrow / 1000).toFixed(1)}K
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {profile.finance.pendingEscrow.toLocaleString()} USDT
+                {profile.finance.pendingEscrow.toLocaleString()} GOLD
               </p>
             </CardContent>
           </Card>
@@ -260,50 +260,6 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground">Active participation across Eden rostered runs.</p>
-              </div>
-
-              <div className="rounded-xl border border-border/50 bg-card/50 p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Reliability Score</p>
-                    <div className="flex items-end gap-2">
-                      <p className="text-4xl font-semibold text-emerald-500">{profile.stats.totalRuns > 0 ? `${reliabilityScore}%` : "—"}</p>
-                      {profile.stats.totalRuns > 0 && (
-                        <Badge variant="success" className="text-[10px] px-2 py-0.5">Stable</Badge>
-                      )}
-                    </div>
-                  </div>
-                  <div className="rounded-full bg-emerald-500/10 p-2 text-emerald-400">
-                    <Target className="h-5 w-5" />
-                  </div>
-                </div>
-                <div className="mt-4 h-2 rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-primary"
-                    style={{ width: `${profile.stats.totalRuns > 0 ? reliabilityScore : 0}%` }}
-                  />
-                </div>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {profile.stats.totalRuns > 0 ? "Consistency measured from attendance and punctuality." : "Complete more runs to unlock your score."}
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-border/50 bg-card/50 p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Next Milestone</p>
-                    <p className="text-4xl font-semibold text-foreground">{Math.max(10 - profile.stats.totalRuns, 0)}</p>
-                  </div>
-                  <div className="rounded-full bg-amber-500/10 p-2 text-amber-400">
-                    <Trophy className="h-5 w-5" />
-                  </div>
-                </div>
-                <p className="mt-3 text-xs text-muted-foreground">
-                  Runs remaining to unlock premium payouts tier.
-                </p>
-                <div className="mt-3 text-xs text-muted-foreground">
-                  <span className="font-medium text-foreground">Tip:</span> Stay available and sign up early for high-demand raids.
-                </div>
               </div>
             </div>
           </CardContent>

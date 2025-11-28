@@ -91,6 +91,10 @@ export default function AdminRunsIndexPage() {
   const hourOptions = useMemo(() => Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")), []);
   const minuteOptions = ["00", "15", "30", "45"];
 
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  yesterday.setHours(0, 0, 0, 0);
+
   // Fetch runs on mount
   useEffect(() => {
     if (!authLoading && user) {
@@ -414,8 +418,13 @@ export default function AdminRunsIndexPage() {
                         <Calendar
                           mode="single"
                           selected={form.watch("scheduled_at") ? new Date(form.watch("scheduled_at")) : undefined}
+                          disabled={(date) => date < yesterday}
                           onSelect={(date) => {
                             if (date) {
+                              if (date < yesterday) {
+                                toast.error("Date cannot be earlier than yesterday.");
+                                return;
+                              }
                               const hours = form.getValues("scheduled_hour") || "20";
                               const minutes = form.getValues("scheduled_minute") || "00";
                               date.setHours(Number(hours));

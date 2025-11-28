@@ -32,7 +32,7 @@ const badgeVariants = cva(
         heroic:
           "bg-indigo-500/10 text-indigo-500",
         normal:
-          "bg-amber-500/10 text-amber-600",
+          "bg-emerald-500/10 text-emerald-500",
       },
     },
     defaultVariants: {
