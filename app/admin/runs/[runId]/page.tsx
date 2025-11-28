@@ -79,7 +79,6 @@ export default function AdminRunDetailsPage() {
   const [roleFilter, setRoleFilter] = useState<SlotRole | "All">("All");
   const allClasses = useMemo(() => Array.from(new Set(signups.flatMap(s => s.characters.map(c => c.class)))).sort(), [signups]);
   const [classFilter, setClassFilter] = useState<string | "All">("All");
-  const [announceMention, setAnnounceMention] = useState(false);
   
   // Initial capacities, updated after run fetch
   const [capacities, setCapacities] = useState<Record<SlotRole, number>>({ Tank: 2, Healer: 4, DPS: 14 });
@@ -136,14 +135,9 @@ export default function AdminRunDetailsPage() {
                  const roles: SlotRole[] = specs.map((sp: any) => sp.role);
                  
                  // Map API locks to frontend status
-                 // Defensive: Check if locks is a string and parse it (handling potential backend inconsistency)
-                 let locks = c.locks || {};
-                 if (typeof locks === "string") {
-                    try { locks = JSON.parse(locks); } catch {}
-                 }
-
+                 const locks = c.locks || {};
                  const getStatus = (diff: string): "G" | "Y" | "R" => {
-                     const s = locks[diff]?.status?.toUpperCase();
+                     const s = locks[diff]?.status;
                      if (s === "LOCKED") return "R";
                      if (s === "PENDING") return "Y";
                      return "G";
@@ -382,7 +376,7 @@ export default function AdminRunDetailsPage() {
 
   async function handleAnnounce() {
       try {
-          await runApi.announce(runId, { mention: announceMention });
+          await runApi.announce(runId);
           toast.success("Roster announced to Discord.");
       } catch (err) {
           toast.error("Failed to announce");
@@ -425,13 +419,6 @@ export default function AdminRunDetailsPage() {
                   <DialogDescription>Configure and send the final roster to Discord.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between rounded-lg border p-3">
-                      <div className="space-y-0.5">
-                          <div className="text-sm font-medium">Mention Players</div>
-                          <div className="text-xs text-muted-foreground">Ping all roster members</div>
-                      </div>
-                      <Switch checked={announceMention} onCheckedChange={setAnnounceMention} />
-                  </div>
                   <div className="flex justify-end gap-2">
                     <Button onClick={handleAnnounce}>Announce</Button>
                   </div>
@@ -596,7 +583,7 @@ export default function AdminRunDetailsPage() {
                                 <div className="flex gap-1">
                                   {diffOrder.map(([k, label]) => {
                                     const variant = c.status[k] === "G" ? "success" : c.status[k] === "Y" ? "warning" : "destructive";
-                                    return <Badge key={k} variant={variant} className="text-[11px] px-1.5 py-0.5 font-semibold rounded-md border-0" title={label}>{k}</Badge>;
+                                    return <Badge key={k} variant={variant} className="text-[11px] px-1.5 py-0.5 font-semibold rounded-md" title={label}>{k}</Badge>;
                                   })}
                                 </div>
                               </div>
@@ -646,7 +633,7 @@ export default function AdminRunDetailsPage() {
                                       <div className="flex gap-1">
                                         {diffOrder.map(([k, label]) => {
                                           const variant = c.status[k] === "G" ? "success" : c.status[k] === "Y" ? "warning" : "destructive";
-                                          return <Badge key={k} variant={variant} className="text-[11px] px-1.5 py-0.5 font-semibold rounded-md border-0" title={label}>{k}</Badge>;
+                                          return <Badge key={k} variant={variant} className="text-[11px] px-1.5 py-0.5 font-semibold rounded-md" title={label}>{k}</Badge>;
                                         })}
                                       </div>
                                     </div>

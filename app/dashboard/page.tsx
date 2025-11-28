@@ -156,24 +156,12 @@ function PlayerDashboardContent() {
       setLoadingChars(true);
       const data = await characterApi.list();
       // Ensure specs is array, if string parse it (though type says array, sometimes API might return string)
-      const sanitizedData = data.map((c) => {
-        let parsedLocks = c.locks || {};
-        // Defensive: try parsing locks if it comes as a string (similar to specs)
-        if (typeof parsedLocks === "string") {
-            try {
-                parsedLocks = JSON.parse(parsedLocks);
-            } catch {
-                parsedLocks = {};
-            }
-        }
-
-        return {
-            ...c,
-            specs: Array.isArray(c.specs) ? c.specs : (typeof c.specs === "string" ? JSON.parse(c.specs) : []),
-            status: c.status ?? "AVAILABLE",
-            locks: parsedLocks,
-        };
-      });
+      const sanitizedData = data.map((c) => ({
+        ...c,
+        specs: Array.isArray(c.specs) ? c.specs : (typeof c.specs === "string" ? JSON.parse(c.specs) : []),
+        status: c.status ?? "AVAILABLE",
+        locks: c.locks || {},
+      }));
       setCharacters(sanitizedData);
     } catch (err) {
       toast.error("Failed to load characters");
@@ -625,8 +613,7 @@ function PlayerDashboardContent() {
                                 {["Mythic", "Heroic", "Normal"].map((diff) => {
                                     const short = diff[0];
                                     const lockInfo = c.locks?.[diff];
-                                    const rawStatus = lockInfo?.status || "AVAILABLE";
-                                    const status = rawStatus.toUpperCase(); // Ensure case-insensitive check
+                                    const status = lockInfo?.status || "AVAILABLE";
                                     const isLockedBySystem = lockInfo?.isLockedBySystem || false;
                                     
                                     // Logic: Green (Available), Red (Locked), Yellow (Pending)
@@ -642,8 +629,9 @@ function PlayerDashboardContent() {
                                             key={diff} 
                                             variant={variant}
                                             className={cn(
-                                                "text-[11px] px-1.5 py-0.5 font-semibold rounded-md transition-opacity border-0",
-                                                canToggle ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed opacity-70"
+                                                "text-[11px] px-1.5 py-0.5 font-semibold rounded-md transition-opacity",
+                                                canToggle ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed opacity-70",
+                                                isLockedBySystem && "ring-1 ring-inset ring-black/20 dark:ring-white/20"
                                             )}
                                             onClick={() => {
                                                 if (canToggle) handleToggleLock(c, diff);
