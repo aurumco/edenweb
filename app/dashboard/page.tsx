@@ -160,6 +160,7 @@ function PlayerDashboardContent() {
         ...c,
         specs: Array.isArray(c.specs) ? c.specs : (typeof c.specs === "string" ? JSON.parse(c.specs) : []),
         status: c.status ?? "AVAILABLE",
+        locks: c.locks || {},
       }));
       setCharacters(sanitizedData);
     } catch (err) {
@@ -313,17 +314,18 @@ function PlayerDashboardContent() {
   }), [characters]);
 
   const handleToggleLock = async (character: Character, difficulty: string) => {
-    // Current state (from locks object):
-    // locks: { Normal: "PENDING", Heroic: "LOCKED", ... }
-    
-    const currentStatus = character.locks?.[difficulty] || "AVAILABLE";
+    // Check if system locked
+    const lockInfo = character.locks?.[difficulty];
+    if (lockInfo?.isLockedBySystem) {
+        toast.error("This lock is managed by the system and cannot be changed.");
+        return;
+    }
+
+    const currentStatus = lockInfo?.status || "AVAILABLE";
     
     // Logic:
     // If LOCKED -> Unlocks to AVAILABLE
     // If AVAILABLE -> Locks to LOCKED
-    // If PENDING -> User can probably override to LOCKED or AVAILABLE. 
-    // Typically PENDING means signed up elsewhere. User said "manually uncheck" (disable).
-    // Let's assume toggle moves to LOCKED if not LOCKED, and AVAILABLE if LOCKED.
     
     const newStatus = currentStatus === "LOCKED" ? "AVAILABLE" : "LOCKED";
     const oldLocks = { ...character.locks };
@@ -332,13 +334,14 @@ function PlayerDashboardContent() {
     setCharacters(prev => prev.map(c => {
         if (c.id !== character.id) return c;
         const newLocks = { ...(c.locks || {}) };
-        if (newStatus === "LOCKED") {
-             newLocks[difficulty] = "LOCKED";
-        } else {
-             // If unlocking, set to AVAILABLE. Note: API might remove the key or set to AVAILABLE.
-             // We'll set to AVAILABLE in UI.
-             newLocks[difficulty] = "AVAILABLE";
-        }
+
+        // Update the lock object
+        newLocks[difficulty] = {
+            status: newStatus as "AVAILABLE" | "LOCKED" | "PENDING",
+            isLocked: newStatus === "LOCKED",
+            isLockedBySystem: false
+        };
+
         return { ...c, locks: newLocks };
     }));
 
@@ -609,15 +612,17 @@ function PlayerDashboardContent() {
                               <div className="flex items-center gap-1.5">
                                 {["Mythic", "Heroic", "Normal"].map((diff) => {
                                     const short = diff[0];
-                                    const status = c.locks?.[diff] || "AVAILABLE";
+                                    const lockInfo = c.locks?.[diff];
+                                    const status = lockInfo?.status || "AVAILABLE";
+                                    const isLockedBySystem = lockInfo?.isLockedBySystem || false;
                                     
                                     // Logic: Green (Available), Red (Locked), Yellow (Pending)
                                     let variant: "destructive" | "success" | "warning" = "success";
                                     if (status === "LOCKED") variant = "destructive";
                                     else if (status === "PENDING") variant = "warning";
                                     
-                                    // Allow Green <-> Red. Disable Yellow.
-                                    const canToggle = status !== "PENDING";
+                                    // Allow Green <-> Red. Disable Yellow (PENDING) and System Locked.
+                                    const canToggle = status !== "PENDING" && !isLockedBySystem;
                                     
                                     return (
                                         <Badge 
@@ -625,14 +630,16 @@ function PlayerDashboardContent() {
                                             variant={variant}
                                             className={cn(
                                                 "text-[11px] px-1.5 py-0.5 font-semibold rounded-md transition-opacity",
-                                                canToggle ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed opacity-70"
+                                                canToggle ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed opacity-70",
+                                                isLockedBySystem && "ring-1 ring-inset ring-black/20 dark:ring-white/20"
                                             )}
                                             onClick={() => {
                                                 if (canToggle) handleToggleLock(c, diff);
                                             }}
-                                            title={`${diff}: ${status}`}
+                                            title={`${diff}: ${status}${isLockedBySystem ? " (System Locked)" : ""}`}
                                         >
                                             {short}
+                                            {isLockedBySystem && <span className="sr-only">(Locked)</span>}
                                         </Badge>
                                     );
                                 })}

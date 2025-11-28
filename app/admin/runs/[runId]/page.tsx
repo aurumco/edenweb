@@ -134,13 +134,28 @@ export default function AdminRunDetailsPage() {
                  const specs = Array.isArray(c.specs) ? c.specs : (typeof c.specs === "string" ? JSON.parse(c.specs) : []);
                  const roles: SlotRole[] = specs.map((sp: any) => sp.role);
                  
+                 // Map API locks to frontend status
+                 const locks = c.locks || {};
+                 const getStatus = (diff: string): "G" | "Y" | "R" => {
+                     const s = locks[diff]?.status;
+                     if (s === "LOCKED") return "R";
+                     if (s === "PENDING") return "Y";
+                     return "G";
+                 };
+
+                 const status: CharacterStatus = {
+                     M: getStatus("Mythic"),
+                     H: getStatus("Heroic"),
+                     N: getStatus("Normal")
+                 };
+
                  return {
                      id: c.id,
                      class: c.char_class,
                      ilevel: c.ilevel,
                      roles: Array.from(new Set(roles)), // unique roles
                      name: c.char_name,
-                     status: { M: "G", H: "G", N: "G" }, // Default to Green (Available)
+                     status: status,
                      apiStatus: c.status
                  };
             });
@@ -192,12 +207,10 @@ export default function AdminRunDetailsPage() {
             }
         });
         
-        // After populating roster, update character statuses
-        // Logic:
-        // If assigned to THIS run:
-        //   If run.status === "COMPLETED" -> Red (R)
-        //   Else -> Yellow (Y)
-        // If not assigned -> Green (G) (default)
+        // After populating roster, update character statuses for assigned characters (Optimistic UI state)
+        // Note: The API should have returned correct locks, so "R" (LOCKED) or "Y" (PENDING) should already be there.
+        // However, if we just assigned them via drag and drop without refreshing, we want to reflect "Y" or "R".
+        // The previous logic was overriding everything. Now we respect API unless assigned here.
         
         const isCompleted = runData.status === "COMPLETED";
         
@@ -210,6 +223,9 @@ export default function AdminRunDetailsPage() {
                 if (isAssigned) {
                     const key = runData.difficulty === "Mythic" ? "M" : runData.difficulty === "Heroic" ? "H" : "N";
                     const newStatus = { ...c.status };
+                    // If assigned, it should be PENDING (Y) or LOCKED (R)
+                    // We assume PENDING if not completed, LOCKED if completed.
+                    // This is an optimistic override for the current run's difficulty.
                     // @ts-ignore
                     newStatus[key] = isCompleted ? "R" : "Y";
                     return { ...c, status: newStatus };
