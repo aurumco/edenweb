@@ -362,7 +362,7 @@ function PlayerDashboardContent() {
           setSignupLoading(runId);
           const signup = signups.find(s => s.run_id === runId);
           if (signup) {
-              await signupApi.create(runId, { signup_type: "DECLINE" });
+              await signupApi.delete(runId);
               setSignups(prev => prev.filter(s => s.run_id !== runId));
               toast.success("Signup cancelled.");
               fetchRuns();

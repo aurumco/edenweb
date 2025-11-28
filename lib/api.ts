@@ -232,6 +232,10 @@ export const signupApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+  delete: (runId: string) =>
+    apiCall<void>(`/api/runs/${runId}/signup`, {
+      method: "DELETE",
+    }),
 };
 
 // Roster endpoints
