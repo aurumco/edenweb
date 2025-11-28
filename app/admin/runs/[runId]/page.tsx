@@ -257,12 +257,33 @@ export default function AdminRunDetailsPage() {
     return Object.values(roster).some(slots => slots.some(a => a?.characterId === characterId));
   }
 
+  function isPlayerAssigned(playerId: string) {
+    return Object.values(roster).some(slots => slots.some(a => a?.playerId === playerId));
+  }
+
   async function onDrop(role: SlotRole, index: number, dataText: string) {
     try {
       const data = JSON.parse(dataText) as Assignment & { roles: SlotRole[]; charName: string };
       if (!data.roles.includes(role)) {
         toast.error(`Character cannot fill ${role}.`);
         return;
+      }
+
+      if (isPlayerAssigned(data.playerId)) {
+        toast.error("Player already in roster.");
+        return;
+      }
+
+      // Find character to check lock status
+      const signup = signups.find(s => s.player.id === data.playerId);
+      const char = signup?.characters.find(c => c.id === data.characterId);
+      if (char) {
+          const key = difficulty === "Mythic" ? "M" : difficulty === "Heroic" ? "H" : "N";
+          // @ts-ignore
+          if (char.status[key] === "R") {
+             toast.error("Character is locked.");
+             return;
+          }
       }
       
       // Optimistic update
@@ -560,7 +581,8 @@ export default function AdminRunDetailsPage() {
                           const diffKey = difficulty === "Mythic" ? "M" : difficulty === "Heroic" ? "H" : "N";
                           const diffOrder: Array<["M"|"H"|"N", string]> = [["M","Mythic"],["H","Heroic"],["N","Normal"]];
                           const assigned = isAssigned(c.id);
-                          const canDrag = !assigned && c.status[diffKey] !== "R";
+                          const playerAssigned = isPlayerAssigned(s.player.id);
+                          const canDrag = !playerAssigned && c.status[diffKey] !== "R";
                           return (
                             <div
                               key={c.id}
@@ -569,7 +591,7 @@ export default function AdminRunDetailsPage() {
                                 const payload = JSON.stringify({ playerId: s.player.id, characterId: c.id, class: c.class, ilevel: c.ilevel, roles: c.roles, name: s.player.name, charName: c.name ?? c.class });
                                 e.dataTransfer.setData("text/plain", payload);
                               }}
-                              className={`relative overflow-hidden rounded-xl bg-card/80 p-3 text-sm space-y-2 border border-border/40 ${assigned ? "opacity-60" : ""}`}
+                              className={`relative overflow-hidden rounded-xl bg-card/80 p-3 text-sm space-y-2 border border-border/40 ${!canDrag ? "opacity-60" : ""}`}
                             >
                               <div
                                 className="pointer-events-none absolute -left-8 -top-8 h-28 w-48 rounded-[32px] blur-2xl opacity-80"
@@ -621,7 +643,8 @@ export default function AdminRunDetailsPage() {
                                 const diffKey = difficulty === "Mythic" ? "M" : difficulty === "Heroic" ? "H" : "N";
                                 const diffOrder: Array<["M"|"H"|"N", string]> = [["M","Mythic"],["H","Heroic"],["N","Normal"]];
                                 const assigned = isAssigned(c.id);
-                                const canDrag = !assigned && c.status[diffKey] !== "R";
+                                const playerAssigned = isPlayerAssigned(s.player.id);
+                                const canDrag = !playerAssigned && c.status[diffKey] !== "R";
                                 return (
                                   <div
                                     key={c.id}
@@ -630,7 +653,7 @@ export default function AdminRunDetailsPage() {
                                       const payload = JSON.stringify({ playerId: s.player.id, characterId: c.id, class: c.class, ilevel: c.ilevel, roles: c.roles, name: s.player.name });
                                       e.dataTransfer.setData("text/plain", payload);
                                     }}
-                                    className={`rounded-md bg-card/60 p-3 text-sm space-y-2 ${assigned ? "opacity-60" : ""}`}
+                                    className={`rounded-md bg-card/60 p-3 text-sm space-y-2 ${!canDrag ? "opacity-60" : ""}`}
                                   >
                                     <div className="flex items-center justify-between">
                                       <span className="font-medium">{c.class} - {c.ilevel} {roleLabel}</span>
