@@ -90,7 +90,7 @@ export const authApi = {
   login: () => {
     window.location.href = `${API_BASE_URL}/api/auth/login`;
   },
-  logout: () => apiCall<void>("/api/auth/logout", { method: "GET" }), // Redirects usually handle this, but maybe API returns 200 and then frontend redirects
+  logout: () => apiCall<void>("/api/auth/logout", { method: "GET" }),
   getProfile: () => apiCall<UserProfile>("/api/profile"),
 };
 
@@ -108,14 +108,25 @@ export interface CharacterInput {
   specs: CharacterSpec[];
 }
 
+export interface CharacterLock {
+  status: "AVAILABLE" | "PENDING" | "LOCKED";
+  isLocked: boolean;
+  isLockedBySystem: boolean;
+}
+
 export interface Character {
   id: string;
   char_name: string;
   char_class: string;
   ilevel: number;
   specs: CharacterSpec[];
-  status?: "AVAILABLE" | "UNAVAILABLE"; 
-  locks?: Record<string, "AVAILABLE" | "PENDING" | "LOCKED">; // Updated to object map
+  // For backwards compatibility or specific contexts where flat status is used
+  status?: "AVAILABLE" | "UNAVAILABLE" | "PENDING" | "LOCKED";
+  // Updated locks structure
+  locks?: Record<string, CharacterLock>;
+  // Additional fields that might appear in specific contexts (like signup availability)
+  is_locked?: boolean;
+  is_locked_by_system?: boolean;
 }
 
 export const characterApi = {
@@ -125,8 +136,6 @@ export const characterApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
-  // Note: Update character details is not explicitly documented in the README summary,
-  // but implied by "Edit character" requirement. Using PATCH /api/characters/:id based on standard patterns.
   update: (id: string, data: Partial<CharacterInput>) =>
     apiCall<Character>(`/api/characters/${id}`, {
       method: "PATCH", 
@@ -145,7 +154,7 @@ export const characterApi = {
 export interface RunInput {
   server_id: string;
   title: string;
-  difficulty: "Mythic" | "Heroic" | "Normal"; // "that three"
+  difficulty: "Mythic" | "Heroic" | "Normal";
   scheduled_at: string;
   roster_channel_id: string;
   discord_channel_id: string; // Required
@@ -167,8 +176,7 @@ export interface Run {
   tank_capacity: number;
   healer_capacity: number;
   dps_capacity: number;
-  status: "PENDING" | "ACTIVE" | "COMPLETED"; // Check status enum validity
-  // created_at, updated_at might be returned
+  status: "PENDING" | "ACTIVE" | "COMPLETED";
 }
 
 export const runApi = {
@@ -208,10 +216,8 @@ export interface Signup {
   id: string;
   user_id: string;
   run_id: string;
-  // character_id: string; // Removed based on new doc (signups are per user with list of characters)
   signup_type: "MAIN" | "BENCH" | "ALT" | "DECLINE";
   created_at: string;
-  // Added based on new documentation
   status: string;
   display_name?: string;
   available_characters: Character[];
@@ -225,21 +231,19 @@ export const signupApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
-  // No delete endpoint documented for signups
 };
 
 // Roster endpoints
 export interface RosterSlot {
-  // id: string; // Slot ID? Or is it user_id/char_id?
   user_id: string;
   character_id: string;
-  assigned_role: "TANK" | "HEALER" | "DPS"; // Updated to uppercase as per new doc
+  assigned_role: "TANK" | "HEALER" | "DPS";
 }
 
 export interface RosterInput {
   user_id: string;
   character_id: string;
-  assigned_role: "TANK" | "HEALER" | "DPS"; // Updated to uppercase
+  assigned_role: "TANK" | "HEALER" | "DPS";
 }
 
 export const rosterApi = {
