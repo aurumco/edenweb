@@ -629,9 +629,8 @@ function PlayerDashboardContent() {
                                             key={diff} 
                                             variant={variant}
                                             className={cn(
-                                                "text-[11px] px-1.5 py-0.5 font-semibold rounded-md transition-opacity",
-                                                canToggle ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed opacity-70",
-                                                isLockedBySystem && "ring-1 ring-inset ring-black/20 dark:ring-white/20"
+                                                "text-[11px] px-1.5 py-0.5 font-semibold rounded-md transition-opacity border-0",
+                                                canToggle ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed opacity-70"
                                             )}
                                             onClick={() => {
                                                 if (canToggle) handleToggleLock(c, diff);

@@ -201,9 +201,10 @@ export const runApi = {
         method: "PATCH",
         body: JSON.stringify({ status })
     }),
-  announce: (runId: string) => 
+  announce: (runId: string, payload?: { mention?: boolean }) =>
       apiCall<void>(`/api/runs/${runId}/announce`, {
-          method: "POST"
+          method: "POST",
+          body: JSON.stringify(payload || {})
       })
 };
 
