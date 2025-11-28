@@ -136,9 +136,14 @@ export default function AdminRunDetailsPage() {
                  const roles: SlotRole[] = specs.map((sp: any) => sp.role);
                  
                  // Map API locks to frontend status
-                 const locks = c.locks || {};
+                 // Defensive: Check if locks is a string and parse it (handling potential backend inconsistency)
+                 let locks = c.locks || {};
+                 if (typeof locks === "string") {
+                    try { locks = JSON.parse(locks); } catch {}
+                 }
+
                  const getStatus = (diff: string): "G" | "Y" | "R" => {
-                     const s = locks[diff]?.status;
+                     const s = locks[diff]?.status?.toUpperCase();
                      if (s === "LOCKED") return "R";
                      if (s === "PENDING") return "Y";
                      return "G";
