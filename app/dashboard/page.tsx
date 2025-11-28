@@ -106,6 +106,7 @@ function PlayerDashboardContent() {
   const [loadingRuns, setLoadingRuns] = useState(true);
   const [submittingChar, setSubmittingChar] = useState(false);
   const [signupLoading, setSignupLoading] = useState<string | null>(null);
+  const [isAddCharOpen, setIsAddCharOpen] = useState(false);
   const pageSize = 10;
 
   const form = useForm<CharacterForm>({
@@ -237,6 +238,7 @@ function PlayerDashboardContent() {
       });
       toast.success("Character added.");
       form.reset({ ilevel: "", char_class: "", roles: { Tank: false, Healer: false, DPS: false }, char_name: "" });
+      setIsAddCharOpen(false);
       await fetchCharacters();
     } catch (err) {
       toast.error("Failed to add character");
@@ -434,7 +436,7 @@ function PlayerDashboardContent() {
                   <CardTitle>My Characters</CardTitle>
                   <CardDescription>Manage your characters and their availability.</CardDescription>
                 </div>
-                <Dialog onOpenChange={(open) => { if (!open) form.reset(); }}>
+                <Dialog open={isAddCharOpen} onOpenChange={(open) => { setIsAddCharOpen(open); if (!open) form.reset(); }}>
                   <DialogTrigger asChild>
                     <Button size="sm" className="gap-1">
                       <Plus className="h-4 w-4" /> Add Character
@@ -629,9 +631,8 @@ function PlayerDashboardContent() {
                                             key={diff} 
                                             variant={variant}
                                             className={cn(
-                                                "text-[11px] px-1.5 py-0.5 font-semibold rounded-md transition-opacity",
-                                                canToggle ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed opacity-70",
-                                                isLockedBySystem && "ring-1 ring-inset ring-black/20 dark:ring-white/20"
+                                                "text-[11px] px-1.5 py-0.5 font-semibold rounded-md transition-opacity border-none",
+                                                canToggle ? "cursor-pointer hover:opacity-80" : "cursor-not-allowed opacity-70"
                                             )}
                                             onClick={() => {
                                                 if (canToggle) handleToggleLock(c, diff);

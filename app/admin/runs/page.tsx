@@ -69,6 +69,7 @@ export default function AdminRunsIndexPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [submittingRun, setSubmittingRun] = useState(false);
+  const [isCreateRunOpen, setIsCreateRunOpen] = useState(false);
   const [scheduleTab, setScheduleTab] = useState<"date" | "time">("date");
   const pageSize = 10;
   const form = useForm<RunForm>({
@@ -161,6 +162,7 @@ export default function AdminRunsIndexPage() {
         embed_text: "",
       });
       setScheduleTab("date");
+      setIsCreateRunOpen(false);
       await fetchData();
     } catch (err) {
       toast.error("Failed to create run");
@@ -248,7 +250,7 @@ export default function AdminRunsIndexPage() {
             <h1 className="text-xl font-semibold">Runs</h1>
             <p className="text-sm text-muted-foreground">Create and manage runs.</p>
           </div>
-          <Dialog>
+          <Dialog open={isCreateRunOpen} onOpenChange={setIsCreateRunOpen}>
             <DialogTrigger asChild>
               <Button className="gap-1">
                 <Plus className="h-4 w-4" /> Create Run
