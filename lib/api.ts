@@ -241,10 +241,18 @@ export const signupApi = {
 };
 
 // Roster endpoints
+export interface CharacterLogs {
+  difficulty: string;
+  best_avg: string;
+  bosses: Record<string, string>;
+}
+
 export interface RosterSlot {
   user_id: string;
   character_id: string;
   assigned_role: "TANK" | "HEALER" | "DPS";
+  spec?: string;
+  logs?: CharacterLogs;
 }
 
 export interface RosterInput {

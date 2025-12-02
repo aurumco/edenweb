@@ -36,7 +36,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
               <DropdownMenuTrigger asChild>
                 <button className="rounded-full focus-visible:ring-2 focus-visible:ring-ring/50">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="https://assets.vercel.com/image/upload/v1588805858/repositories/vercel/logo.png" />
+                    <AvatarImage src="https://ui-avatars.com/api/?name=Admin&background=random" />
                     <AvatarFallback>AD</AvatarFallback>
                   </Avatar>
                 </button>

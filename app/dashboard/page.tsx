@@ -242,6 +242,10 @@ function PlayerDashboardContent() {
       toast.error("Select at least one role.");
       return;
     }
+    if (!data.char_name?.includes("-")) {
+      toast.error("Character name must include a hyphen (e.g., Name-Server).");
+      return;
+    }
 
     try {
       setSubmittingChar(true);
@@ -274,6 +278,10 @@ function PlayerDashboardContent() {
       const ilevelOk = /^\d{3}$/.test(String(data.ilevel));
       if (!ilevelOk) {
         toast.error("iLevel must be a 3-digit number.");
+        return;
+      }
+      if (!data.char_name?.includes("-")) {
+        toast.error("Character name must include a hyphen (e.g., Name-Server).");
         return;
       }
 
@@ -520,7 +528,7 @@ function PlayerDashboardContent() {
                     <form onSubmit={form.handleSubmit(onSubmit as any)} className="grid gap-4">
                       <div className="grid gap-2">
                         <Label htmlFor="char_name">Name</Label>
-                        <Input id="char_name" placeholder="e.g., Arthas" value={form.watch("char_name") || ""} onChange={(e) => form.setValue("char_name", e.target.value)} />
+                        <Input id="char_name" placeholder="e.g. Titanwarrior-kazzak" value={form.watch("char_name") || ""} onChange={(e) => form.setValue("char_name", e.target.value)} />
                       </div>
                       <div className="grid gap-4">
                         <div className="grid gap-2">
@@ -583,7 +591,7 @@ function PlayerDashboardContent() {
                     <form onSubmit={editForm.handleSubmit(onEditSubmit as any)} className="grid gap-4">
                       <div className="grid gap-2">
                         <Label htmlFor="edit_char_name">Name</Label>
-                        <Input id="edit_char_name" placeholder="e.g., Arthas" value={editForm.watch("char_name") || ""} onChange={(e) => editForm.setValue("char_name", e.target.value)} />
+                        <Input id="edit_char_name" placeholder="e.g. Titanwarrior-kazzak" value={editForm.watch("char_name") || ""} onChange={(e) => editForm.setValue("char_name", e.target.value)} />
                       </div>
                       <div className="grid gap-4">
                         <div className="grid gap-2">
