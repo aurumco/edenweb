@@ -51,7 +51,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { Pencil, Trash2, Plus, Shield, Heart, Wand2, TrendingUp } from "lucide-react";
+import { Pencil, Trash2, Plus, Shield, Heart, Wand2, TrendingUp, X } from "lucide-react";
 import { characterApi, runApi, signupApi, Character as ApiCharacter, Run as ApiRun, Signup as ApiSignup, CharacterSpec } from "@/lib/api";
 
 const ROLES = ["Tank", "Healer", "DPS"] as const;
@@ -71,6 +71,22 @@ const WOW_CLASSES = [
   "Evoker",
 ] as const;
 
+const CLASS_SPECS: Record<string, string[]> = {
+  "Death Knight": ["Blood", "Frost", "Unholy"],
+  "Demon Hunter": ["Havoc", "Vengeance"],
+  "Druid": ["Balance", "Feral", "Guardian", "Restoration"],
+  "Evoker": ["Devastation", "Preservation", "Augmentation"],
+  "Hunter": ["Beast Mastery", "Marksmanship", "Survival"],
+  "Mage": ["Arcane", "Fire", "Frost"],
+  "Monk": ["Brewmaster", "Mistweaver", "Windwalker"],
+  "Paladin": ["Holy", "Protection", "Retribution"],
+  "Priest": ["Discipline", "Holy", "Shadow"],
+  "Rogue": ["Assassination", "Outlaw", "Subtlety"],
+  "Shaman": ["Elemental", "Enhancement", "Restoration"],
+  "Warlock": ["Affliction", "Demonology", "Destruction"],
+  "Warrior": ["Arms", "Fury", "Protection"]
+};
+
 type Role = (typeof ROLES)[number];
 
 type Character = ApiCharacter;
@@ -80,6 +96,7 @@ type CharacterForm = {
   char_class: string;
   roles: Record<Role, boolean>;
   char_name?: string;
+  specs: string[];
 };
 
 type TestRun = ApiRun & {
@@ -115,6 +132,7 @@ function PlayerDashboardContent() {
       char_class: "",
       roles: { Tank: false, Healer: false, DPS: false },
       char_name: "",
+      specs: []
     },
     mode: "onChange",
   });
@@ -125,6 +143,7 @@ function PlayerDashboardContent() {
       char_class: "",
       roles: { Tank: false, Healer: false, DPS: false },
       char_name: "",
+      specs: []
     },
     mode: "onChange",
   });
@@ -148,6 +167,9 @@ function PlayerDashboardContent() {
         char_class: edit.char_class,
         roles: roles,
         char_name: edit.char_name,
+        // Assuming edit.specs might contain role info, but if we start saving 'spec' in backend we might need to parse it.
+        // For now, if 'specs' is available in edit object, we try to extract spec names if they match known specs.
+        specs: edit.specs.map(s => s.spec).filter(s => CLASS_SPECS[edit.char_class]?.includes(s))
       });
     }
   }, [edit]);
@@ -223,9 +245,9 @@ function PlayerDashboardContent() {
 
     // Map roles to specs
     const specs: CharacterSpec[] = selectedRoles.map(r => ({
-        spec: r, // Using Role as Spec name since we don't have specific specs
+        spec: r, // Using Role as Spec name for existing compatibility
         role: r,
-        type: r === "Tank" || r === "Healer" ? "Melee" : "Ranged" // Simplified type logic, ideally should be based on class/spec
+        type: r === "Tank" || r === "Healer" ? "Melee" : "Ranged"
     }));
 
     try {
@@ -235,9 +257,10 @@ function PlayerDashboardContent() {
         char_class: data.char_class,
         ilevel: Number(data.ilevel),
         specs: specs,
+        spec: data.specs.length > 0 ? data.specs.join(",") : undefined
       });
       toast.success("Character added.");
-      form.reset({ ilevel: "", char_class: "", roles: { Tank: false, Healer: false, DPS: false }, char_name: "" });
+      form.reset({ ilevel: "", char_class: "", roles: { Tank: false, Healer: false, DPS: false }, char_name: "", specs: [] });
       setIsAddCharOpen(false);
       await fetchCharacters();
     } catch (err) {
@@ -256,7 +279,6 @@ function PlayerDashboardContent() {
         return;
       }
 
-      // Map roles to specs (assuming we can update specs too, if not API will ignore)
       const selectedRoles = ROLES.filter((r) => data.roles[r]);
       const specs: CharacterSpec[] = selectedRoles.map(r => ({
           spec: r,
@@ -270,7 +292,8 @@ function PlayerDashboardContent() {
             char_name: data.char_name?.trim(),
             char_class: data.char_class,
             ilevel: Number(data.ilevel),
-            specs: specs
+            specs: specs,
+            spec: data.specs.length > 0 ? data.specs.join(",") : undefined
           });
           toast.success("Character updated.");
           setEdit(null);
@@ -389,6 +412,57 @@ function PlayerDashboardContent() {
     setTab((prev) => (prev !== next ? next : prev));
   }, [searchParams]);
 
+  // Shared Spec Selection Component Logic
+  const SpecSelection = ({ currentForm, isEdit = false }: { currentForm: typeof form | typeof editForm, isEdit?: boolean }) => {
+      const selectedClass = currentForm.watch("char_class");
+      const selectedSpecs = currentForm.watch("specs") || [];
+      const availableSpecs = selectedClass ? CLASS_SPECS[selectedClass] || [] : [];
+      const isDisabled = !selectedClass;
+
+      return (
+          <div className="grid gap-2">
+            <Label>Specs</Label>
+            <div className="flex flex-col gap-2">
+                 <div className="flex flex-wrap gap-2 min-h-[36px] items-center p-2 rounded-md border border-input bg-transparent">
+                    {selectedSpecs.length === 0 && (
+                        <span className="text-sm text-muted-foreground">{isDisabled ? "Select a class first" : "Select specs..."}</span>
+                    )}
+                    {selectedSpecs.map(spec => (
+                        <Badge key={spec} variant="secondary" className="gap-1 pr-1">
+                            {spec}
+                            <div
+                                className="cursor-pointer rounded-full hover:bg-muted p-0.5"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    currentForm.setValue("specs", selectedSpecs.filter(s => s !== spec));
+                                }}
+                            >
+                                <X className="h-3 w-3" />
+                            </div>
+                        </Badge>
+                    ))}
+                 </div>
+
+                 {!isDisabled && (
+                     <div className="flex flex-wrap gap-1">
+                         {availableSpecs.filter(s => !selectedSpecs.includes(s)).map(spec => (
+                             <Badge
+                                key={spec}
+                                variant="outline"
+                                className="cursor-pointer hover:bg-accent transition-colors"
+                                onClick={() => currentForm.setValue("specs", [...selectedSpecs, spec])}
+                             >
+                                 <Plus className="h-3 w-3 mr-1" />
+                                 {spec}
+                             </Badge>
+                         ))}
+                     </div>
+                 )}
+            </div>
+          </div>
+      );
+  };
+
   return (
     <PlayerShell>
       <div className="space-y-6">
@@ -455,7 +529,7 @@ function PlayerDashboardContent() {
                       <div className="grid gap-4">
                         <div className="grid gap-2">
                           <Label htmlFor="char_class">Class</Label>
-                          <Select value={form.watch("char_class")} onValueChange={(v) => form.setValue("char_class", v, { shouldValidate: true })}>
+                          <Select value={form.watch("char_class")} onValueChange={(v) => { form.setValue("char_class", v, { shouldValidate: true }); form.setValue("specs", []); }}>
                             <SelectTrigger id="char_class" className="w-full">
                               <SelectValue placeholder="Select a class" />
                             </SelectTrigger>
@@ -466,6 +540,7 @@ function PlayerDashboardContent() {
                             </SelectContent>
                           </Select>
                         </div>
+                        <SpecSelection currentForm={form} />
                         <div className="grid gap-2">
                           <Label htmlFor="ilevel">iLevel</Label>
                           <Input id="ilevel" inputMode="numeric" placeholder="720" value={form.watch("ilevel")} onChange={(e) => form.setValue("ilevel", e.target.value)} />
@@ -517,7 +592,7 @@ function PlayerDashboardContent() {
                       <div className="grid gap-4">
                         <div className="grid gap-2">
                           <Label htmlFor="edit_char_class">Class</Label>
-                          <Select value={editForm.watch("char_class")} onValueChange={(v) => editForm.setValue("char_class", v, { shouldValidate: true })}>
+                          <Select value={editForm.watch("char_class")} onValueChange={(v) => { editForm.setValue("char_class", v, { shouldValidate: true }); editForm.setValue("specs", []); }}>
                             <SelectTrigger id="edit_char_class" className="w-full">
                               <SelectValue placeholder="Select a class" />
                             </SelectTrigger>
@@ -528,6 +603,7 @@ function PlayerDashboardContent() {
                             </SelectContent>
                           </Select>
                         </div>
+                        <SpecSelection currentForm={editForm} isEdit />
                         <div className="grid gap-2">
                           <Label htmlFor="edit_ilevel">iLevel</Label>
                           <Input id="edit_ilevel" inputMode="numeric" placeholder="720" value={editForm.watch("ilevel")} onChange={(e) => editForm.setValue("ilevel", e.target.value)} />

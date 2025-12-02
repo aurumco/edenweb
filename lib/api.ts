@@ -106,6 +106,7 @@ export interface CharacterInput {
   char_class: string;
   ilevel: number;
   specs: CharacterSpec[];
+  spec?: string;
 }
 
 export interface CharacterLock {
