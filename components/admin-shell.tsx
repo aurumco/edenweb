@@ -36,13 +36,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
               <DropdownMenuTrigger asChild>
                 <button className="rounded-full focus-visible:ring-2 focus-visible:ring-ring/50">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="https://cdn.discordapp.com/avatars/978052702451953695/624215307403aa29643ee7182cb67c61.png?size=256/" />
-                    <AvatarFallback>ED</AvatarFallback>
+                    <AvatarImage src="https://assets.vercel.com/image/upload/v1588805858/repositories/vercel/logo.png" />
+                    <AvatarFallback>AD</AvatarFallback>
                   </Avatar>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuLabel>Admin</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
                   <DropdownMenuItem asChild>

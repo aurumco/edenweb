@@ -105,7 +105,8 @@ export interface CharacterInput {
   char_name: string;
   char_class: string;
   ilevel: number;
-  specs: CharacterSpec[];
+  // Optional specs for frontend usage, but we will exclude it from payload if needed
+  specs?: CharacterSpec[];
   spec?: string;
 }
 

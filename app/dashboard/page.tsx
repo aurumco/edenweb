@@ -167,7 +167,7 @@ function PlayerDashboardContent() {
         char_class: edit.char_class,
         roles: roles,
         char_name: edit.char_name,
-        // Assuming edit.specs might contain role info, but if we start saving 'spec' in backend we might need to parse it.
+        // Assuming edit.specs might contain role info, but if we start saving 'spec' in backend we might need to parse it. 
         // For now, if 'specs' is available in edit object, we try to extract spec names if they match known specs.
         specs: edit.specs.map(s => s.spec).filter(s => CLASS_SPECS[edit.char_class]?.includes(s))
       });
@@ -243,22 +243,20 @@ function PlayerDashboardContent() {
       return;
     }
 
-    // Map roles to specs
-    const specs: CharacterSpec[] = selectedRoles.map(r => ({
-        spec: r, // Using Role as Spec name for existing compatibility
-        role: r,
-        type: r === "Tank" || r === "Healer" ? "Melee" : "Ranged"
-    }));
-
     try {
       setSubmittingChar(true);
-      await characterApi.create({
+      // Explicitly construct payload with only allowed fields
+      const payload: any = {
         char_name: data.char_name?.trim() || "Unnamed",
         char_class: data.char_class,
         ilevel: Number(data.ilevel),
-        specs: specs,
-        spec: data.specs.length > 0 ? data.specs.join(",") : undefined
-      });
+      };
+      
+      if (data.specs.length > 0) {
+          payload.spec = data.specs.join(",");
+      }
+
+      await characterApi.create(payload);
       toast.success("Character added.");
       form.reset({ ilevel: "", char_class: "", roles: { Tank: false, Healer: false, DPS: false }, char_name: "", specs: [] });
       setIsAddCharOpen(false);
@@ -279,22 +277,20 @@ function PlayerDashboardContent() {
         return;
       }
 
-      const selectedRoles = ROLES.filter((r) => data.roles[r]);
-      const specs: CharacterSpec[] = selectedRoles.map(r => ({
-          spec: r,
-          role: r,
-          type: r === "Tank" || r === "Healer" ? "Melee" : "Ranged"
-      }));
-
       try {
           setSubmittingChar(true);
-          await characterApi.update(edit.id, {
+          
+          const payload: any = {
             char_name: data.char_name?.trim(),
             char_class: data.char_class,
             ilevel: Number(data.ilevel),
-            specs: specs,
-            spec: data.specs.length > 0 ? data.specs.join(",") : undefined
-          });
+          };
+
+          if (data.specs.length > 0) {
+              payload.spec = data.specs.join(",");
+          }
+
+          await characterApi.update(edit.id, payload);
           toast.success("Character updated.");
           setEdit(null);
           await fetchCharacters();
@@ -430,7 +426,7 @@ function PlayerDashboardContent() {
                     {selectedSpecs.map(spec => (
                         <Badge key={spec} variant="secondary" className="gap-1 pr-1">
                             {spec}
-                            <div
+                            <div 
                                 className="cursor-pointer rounded-full hover:bg-muted p-0.5"
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -442,13 +438,13 @@ function PlayerDashboardContent() {
                         </Badge>
                     ))}
                  </div>
-
+                 
                  {!isDisabled && (
                      <div className="flex flex-wrap gap-1">
                          {availableSpecs.filter(s => !selectedSpecs.includes(s)).map(spec => (
-                             <Badge
-                                key={spec}
-                                variant="outline"
+                             <Badge 
+                                key={spec} 
+                                variant="outline" 
                                 className="cursor-pointer hover:bg-accent transition-colors"
                                 onClick={() => currentForm.setValue("specs", [...selectedSpecs, spec])}
                              >
