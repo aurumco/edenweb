@@ -28,7 +28,7 @@ export function PlayerShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/40">
         <div className="container mx-auto max-w-7xl flex h-14 items-center justify-between px-4">
           <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2 text-sm">
-            <span className={`${logoFont.className} inline-flex h-8 px-3 items-center justify-center rounded-lg bg-primary/10 text-primary text-base tracking-wide`}>eden.</span>
+            <span className={`${logoFont.className} inline-flex h-8 px-3 items-center justify-center rounded-lg bg-orange-500/20 text-orange-500 text-base tracking-wide leading-none`}>e.</span>
           </Link>
           <nav className="flex items-center gap-3">
             <ThemeToggle />

@@ -179,6 +179,7 @@ function PlayerDashboardContent() {
       setLoadingChars(true);
       const data = await characterApi.list();
       // Ensure specs is array, if string parse it (though type says array, sometimes API might return string)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sanitizedData = data.map((c: any) => {
         let specs = Array.isArray(c.specs) ? c.specs : (typeof c.specs === "string" ? JSON.parse(c.specs) : []);
 
@@ -218,6 +219,7 @@ function PlayerDashboardContent() {
       await Promise.all(runIds.map(async (rid) => {
           try {
               const s = await signupApi.list(rid);
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const mySignup = s.find((x: any) => x.user_id === user?.userId); // Assuming user_id matches
               if (mySignup) allSignups.push(mySignup);
           } catch {}
@@ -264,6 +266,7 @@ function PlayerDashboardContent() {
     try {
       setSubmittingChar(true);
       // Explicitly construct payload with only allowed fields
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const payload: any = {
         char_name: data.char_name?.trim() || "Unnamed",
         char_class: data.char_class,
@@ -302,6 +305,7 @@ function PlayerDashboardContent() {
       try {
           setSubmittingChar(true);
           
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const payload: any = {
             char_name: data.char_name?.trim(),
             char_class: data.char_class,
@@ -350,11 +354,43 @@ function PlayerDashboardContent() {
     return myRuns.slice(start, start + pageSize);
   }, [myRuns, pageRuns]);
 
-  const stats = useMemo(() => ({
-    total: characters.length,
-    available: characters.filter((c) => c.status !== "UNAVAILABLE").length,
-    avgILevel: characters.length > 0 ? Math.round(characters.reduce((sum, c) => sum + c.ilevel, 0) / characters.length) : 0,
-  }), [characters]);
+  const stats = useMemo(() => {
+    let totalPerf = 0;
+    let perfCount = 0;
+
+    characters.forEach(c => {
+        if (c.logs) {
+            try {
+                // logs is often a stringified JSON if it comes from API as a string
+                let logsData;
+                if (typeof c.logs === 'string') {
+                    logsData = JSON.parse(c.logs);
+                } else {
+                    logsData = c.logs;
+                }
+
+                if (logsData && logsData.best_avg) {
+                    const val = parseFloat(logsData.best_avg);
+                    if (!isNaN(val)) {
+                        totalPerf += val;
+                        perfCount++;
+                    }
+                }
+            } catch (e) {
+                // ignore parsing error
+            }
+        }
+    });
+
+    const avgPerf = perfCount > 0 ? (totalPerf / perfCount).toFixed(2) : "0.00";
+
+    return {
+      total: characters.length,
+      available: characters.filter((c) => c.status !== "UNAVAILABLE").length,
+      avgILevel: characters.length > 0 ? Math.round(characters.reduce((sum, c) => sum + c.ilevel, 0) / characters.length) : 0,
+      avgPerformance: avgPerf
+    };
+  }, [characters]);
 
   const handleToggleLock = async (character: Character, difficulty: string) => {
     // Check if system locked
@@ -376,7 +412,8 @@ function PlayerDashboardContent() {
     // Optimistic update
     setCharacters(prev => prev.map(c => {
         if (c.id !== character.id) return c;
-        const newLocks = { ...(c.locks || {}) };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const newLocks: any = { ...(c.locks || {}) };
 
         // Update the lock object
         newLocks[difficulty] = {
@@ -492,13 +529,14 @@ function PlayerDashboardContent() {
 
           <TabsContent value="characters" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=inactive]:animate-out data-[state=inactive]:fade-out-0 duration-300 ease-out">
             {loadingChars ? (
-              <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                <Skeleton className="h-20 rounded-xl" />
                 <Skeleton className="h-20 rounded-xl" />
                 <Skeleton className="h-20 rounded-xl" />
                 <Skeleton className="h-20 rounded-xl" />
               </div>
             ) : (
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
               <div className="rounded-xl bg-card p-4">
                 <div className="flex items-center justify-between mb-1">
                   <div className="text-2xl font-bold text-foreground">{stats.total}</div>
@@ -520,6 +558,13 @@ function PlayerDashboardContent() {
                 </div>
                 <div className="text-xs text-muted-foreground">Total Available</div>
               </div>
+              <div className="rounded-xl bg-card p-4">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-2xl font-bold text-foreground">{stats.avgPerformance}%</div>
+                  <div className="text-xs font-medium text-orange-500 bg-orange-500/10 px-2 py-1 rounded-md">Avg Perf</div>
+                </div>
+                <div className="text-xs text-muted-foreground">Performance Average</div>
+              </div>
             </div>
             )}
             <Card>
@@ -539,6 +584,7 @@ function PlayerDashboardContent() {
                       <DialogTitle>Add Character</DialogTitle>
                       <DialogDescription>Enter the character details.</DialogDescription>
                     </DialogHeader>
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     <form onSubmit={form.handleSubmit(onSubmit as any)} className="grid gap-4">
                       <div className="grid gap-2">
                         <Label htmlFor="char_name">Name</Label>
@@ -602,6 +648,7 @@ function PlayerDashboardContent() {
                       <DialogTitle>Edit Character</DialogTitle>
                       <DialogDescription>Update the character details.</DialogDescription>
                     </DialogHeader>
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     <form onSubmit={editForm.handleSubmit(onEditSubmit as any)} className="grid gap-4">
                       <div className="grid gap-2">
                         <Label htmlFor="edit_char_name">Name</Label>
@@ -673,7 +720,7 @@ function PlayerDashboardContent() {
                       <TableHead>Name</TableHead>
                       <TableHead>Class</TableHead>
                       <TableHead>iLevel</TableHead>
-                      <TableHead>Roles</TableHead>
+                      <TableHead>Role</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -690,17 +737,27 @@ function PlayerDashboardContent() {
                           <TableCell className="text-sm">{c.ilevel}</TableCell>
                           <TableCell>
                             <div className="flex flex-wrap items-center gap-1.5">
-                              {(c.specs || []).map((s) => {
-                                const specName = typeof s === "string" ? s : (s.spec || s.role);
-                                const role = typeof s === "string" ? s : s.role;
-                                let badgeClass = "text-xs rounded-full px-2 py-0.5";
-                                if (role === "Tank") badgeClass += " bg-lime-500/50 text-lime-700 dark:bg-lime-500/10 dark:text-lime-400";
-                                else if (role === "Healer") badgeClass += " bg-fuchsia-500/50 text-fuchsia-700 dark:bg-fuchsia-400/10 dark:text-fuchsia-400";
-                                else badgeClass += " bg-rose-500/50 text-rose-700 dark:bg-rose-400/10 dark:text-rose-400";
-                                return (
-                                  <Badge key={`${c.id}-${specName}`} variant="outline" className={badgeClass}>{specName}</Badge>
-                                );
-                              })}
+                              {(() => {
+                                  let role = "DPS"; // Default
+                                  // Prefer explicit role field if available
+                                  // The API returns "role": "DPS" or similar.
+                                  // @ts-expect-error role is not typed in Character interface yet
+                                  if (c.role) role = c.role;
+                                  else if (c.specs && c.specs.length > 0) {
+                                      // Fallback to deriving from specs if role field is missing
+                                      const s = c.specs[0];
+                                      role = typeof s === "string" ? s : s.role;
+                                  }
+
+                                  let badgeClass = "text-xs rounded-full px-2 py-0.5 bg-opacity-20 border-none";
+                                  if (role === "Tank") badgeClass += " bg-blue-500 text-blue-500";
+                                  else if (role === "Healer") badgeClass += " bg-emerald-500 text-emerald-500";
+                                  else badgeClass += " bg-red-500 text-red-500"; // DPS
+
+                                  return (
+                                      <Badge variant="outline" className={badgeClass}>{role}</Badge>
+                                  );
+                              })()}
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
@@ -831,7 +888,7 @@ function PlayerDashboardContent() {
               <CardContent>
                 {myRuns.length === 0 ? (
                   <div className="text-center py-12 space-y-4">
-                    <div className="text-sm text-muted-foreground">You haven't signed up for any runs.</div>
+                    <div className="text-sm text-muted-foreground">You have not signed up for any runs.</div>
                   </div>
                 ) : (
                   <>
