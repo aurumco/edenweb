@@ -24,6 +24,15 @@ type Difficulty = (typeof DIFFICULTIES)[number];
 
 type SlotRole = "Tank" | "Healer" | "DPS";
 
+const SPEC_ROLES: Record<string, SlotRole> = {
+  // Tanks
+  "Blood": "Tank", "Vengeance": "Tank", "Guardian": "Tank", "Brewmaster": "Tank", "Protection": "Tank",
+  // Healers
+  "Restoration": "Healer", "Holy": "Healer", "Discipline": "Healer", "Mistweaver": "Healer", "Preservation": "Healer",
+  // DPS
+  "Frost": "DPS", "Unholy": "DPS", "Havoc": "DPS", "Balance": "DPS", "Feral": "DPS", "Augmentation": "DPS", "Devastation": "DPS", "Beast Mastery": "DPS", "Marksmanship": "DPS", "Survival": "DPS", "Arcane": "DPS", "Fire": "DPS", "Windwalker": "DPS", "Retribution": "DPS", "Shadow": "DPS", "Assassination": "DPS", "Outlaw": "DPS", "Subtlety": "DPS", "Elemental": "DPS", "Enhancement": "DPS", "Affliction": "DPS", "Demonology": "DPS", "Destruction": "DPS", "Arms": "DPS", "Fury": "DPS"
+};
+
 interface Player { id: string; name: string }
 interface CharacterStatus { M: "G" | "Y" | "R"; H: "G" | "Y" | "R"; N: "G" | "Y" | "R" }
 
@@ -32,10 +41,12 @@ interface Character {
   class: string;
   ilevel: number;
   roles: SlotRole[]; // e.g. ["Healer", "DPS"]
-  log?: number; // e.g. 99
+  log?: number; // e.g. 99 (deprecated for logsData)
   status: CharacterStatus;
   name?: string; // character name
   apiStatus: "AVAILABLE" | "UNAVAILABLE";
+  specsStr?: string;
+  logsData?: CharacterLogs;
 }
 
 interface Signup {
@@ -142,8 +153,43 @@ export default function AdminRunDetailsPage() {
 
             const chars: Character[] = sourceChars.map((c: any) => {
                  // specs parsing
-                 const specs = Array.isArray(c.specs) ? c.specs : (typeof c.specs === "string" ? JSON.parse(c.specs) : []);
-                 const roles: SlotRole[] = specs.map((sp: any) => sp.role);
+                 let roles: SlotRole[] = [];
+                 let specsStr = c.spec || "";
+
+                 // Try to get roles from array first
+                 if (Array.isArray(c.specs)) {
+                     roles = c.specs.map((sp: any) => sp.role);
+                 } else if (typeof c.specs === "string" && c.specs.startsWith("[")) {
+                     try {
+                         const parsed = JSON.parse(c.specs);
+                         roles = parsed.map((sp: any) => sp.role);
+                     } catch {}
+                 }
+
+                 // If no roles found but we have spec string, try to infer
+                 if (roles.length === 0 && specsStr) {
+                     const parts = specsStr.split(",").map((x: string) => x.trim());
+                     parts.forEach((p: string) => {
+                         if (SPEC_ROLES[p]) roles.push(SPEC_ROLES[p]);
+                     });
+                 }
+
+                 // Fallback if still no roles (shouldn't happen with valid data)
+                 if (roles.length === 0) {
+                     // Assume all roles valid for class? No, default to DPS to be safe
+                     roles = ["DPS"];
+                 }
+
+                 // Logs parsing
+                 let logsData: CharacterLogs | undefined = undefined;
+                 if (c.logs) {
+                     if (typeof c.logs === "object") logsData = c.logs;
+                     else if (typeof c.logs === "string") {
+                         try {
+                             logsData = JSON.parse(c.logs);
+                         } catch (e) { console.error("Failed to parse logs", e); }
+                     }
+                 }
                  
                  // Map API locks to frontend status
                  const locks = c.locks || {};
@@ -167,7 +213,9 @@ export default function AdminRunDetailsPage() {
                      roles: Array.from(new Set(roles)), // unique roles
                      name: c.char_name,
                      status: status,
-                     apiStatus: c.status
+                     apiStatus: c.status,
+                     specsStr: specsStr,
+                     logsData: logsData
                  };
             });
 
@@ -190,6 +238,7 @@ export default function AdminRunDetailsPage() {
                 if (s.player.id === slot.user_id) {
                      const c = s.characters.find(ch => ch.id === slot.character_id);
                      if (c) {
+                         // Prefer data from signup character (c) as it has parsed logs/specs
                          charDetails = {
                              playerId: s.player.id,
                              characterId: c.id,
@@ -197,8 +246,8 @@ export default function AdminRunDetailsPage() {
                              ilevel: c.ilevel,
                              name: s.player.name,
                              charName: c.name || c.class,
-                             spec: slot.spec,
-                             logs: slot.logs
+                             spec: c.specsStr || slot.spec,
+                             logs: c.logsData || slot.logs
                          };
                          break;
                      }
@@ -651,7 +700,66 @@ export default function AdminRunDetailsPage() {
                                 </div>
                               </div>
                               <div className="relative flex items-center justify-between">
-                                <span className="text-muted-foreground">{c.log ? `${c.log}% Log` : "No log"}</span>
+                                <div className="flex items-center gap-2">
+                                  {c.logsData ? (
+                                     <TooltipProvider delayDuration={0}>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <div className="flex items-center gap-1 cursor-help hover:opacity-80 transition-opacity">
+                                                    <Badge variant="outline" className="text-[10px] px-1 py-0 h-5 gap-1 border-muted-foreground/30">
+                                                        <Shield className="h-3 w-3" />
+                                                        {c.logsData.best_avg}%
+                                                    </Badge>
+                                                </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="w-64 p-0 bg-card border border-border/50 shadow-xl rounded-xl overflow-hidden" sideOffset={5}>
+                                                <div className="bg-muted/50 p-3 border-b border-border/50 flex justify-between items-center">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">{c.logsData.difficulty}</span>
+                                                        <span className="font-bold text-sm">Best Avg: {c.logsData.best_avg}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="p-2 grid gap-1">
+                                                    {Object.entries(c.logsData.bosses).map(([boss, statusStr]) => {
+                                                        const isKilled = statusStr.includes("✅") || !statusStr.includes("Not Killed");
+                                                        const percent = statusStr.replace(/✅|❌|Not Killed/g, "").trim();
+                                                        return (
+                                                            <div key={boss} className="flex items-center justify-between text-xs p-1 rounded hover:bg-muted/50">
+                                                                <span className="truncate max-w-[140px] font-medium">{boss}</span>
+                                                                <div className="flex items-center gap-1.5">
+                                                                    {isKilled ? (
+                                                                        <div className="flex items-center gap-1 text-emerald-500">
+                                                                            <Check className="h-3 w-3" />
+                                                                            <span>{percent}</span>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="flex items-center gap-1 text-red-500">
+                                                                            <CircleX className="h-3 w-3" />
+                                                                            <span>Not Killed</span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                     </TooltipProvider>
+                                  ) : (
+                                     <span className="text-muted-foreground text-xs">No logs</span>
+                                  )}
+
+                                  {/* Spec Badges for Signup Card */}
+                                  {c.specsStr && (
+                                      <div className="flex flex-wrap gap-1">
+                                          {c.specsStr.split(",").map(s => (
+                                              <Badge key={s} variant="secondary" className="text-[9px] px-1 py-0 h-4">{s.trim()}</Badge>
+                                          ))}
+                                      </div>
+                                  )}
+                                </div>
+
                                 <div className="flex gap-1">
                                   {diffOrder.map(([k, label]) => {
                                     const variant = c.status[k] === "G" ? "success" : c.status[k] === "Y" ? "warning" : "destructive";
@@ -701,7 +809,66 @@ export default function AdminRunDetailsPage() {
                                       <span className="font-medium">{c.class} - {c.ilevel} {roleLabel}</span>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                      <span className="text-muted-foreground">{c.log ? `${c.log}% Log` : "No log"}</span>
+                                      <div className="flex items-center gap-2">
+                                        {c.logsData ? (
+                                           <TooltipProvider delayDuration={0}>
+                                              <Tooltip>
+                                                  <TooltipTrigger asChild>
+                                                      <div className="flex items-center gap-1 cursor-help hover:opacity-80 transition-opacity">
+                                                          <Badge variant="outline" className="text-[10px] px-1 py-0 h-5 gap-1 border-muted-foreground/30">
+                                                              <Shield className="h-3 w-3" />
+                                                              {c.logsData.best_avg}%
+                                                          </Badge>
+                                                      </div>
+                                                  </TooltipTrigger>
+                                                  <TooltipContent className="w-64 p-0 bg-card border border-border/50 shadow-xl rounded-xl overflow-hidden" sideOffset={5}>
+                                                      <div className="bg-muted/50 p-3 border-b border-border/50 flex justify-between items-center">
+                                                          <div className="flex flex-col">
+                                                              <span className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">{c.logsData.difficulty}</span>
+                                                              <span className="font-bold text-sm">Best Avg: {c.logsData.best_avg}</span>
+                                                          </div>
+                                                      </div>
+                                                      <div className="p-2 grid gap-1">
+                                                          {Object.entries(c.logsData.bosses).map(([boss, statusStr]) => {
+                                                              const isKilled = statusStr.includes("✅") || !statusStr.includes("Not Killed");
+                                                              const percent = statusStr.replace(/✅|❌|Not Killed/g, "").trim();
+                                                              return (
+                                                                  <div key={boss} className="flex items-center justify-between text-xs p-1 rounded hover:bg-muted/50">
+                                                                      <span className="truncate max-w-[140px] font-medium">{boss}</span>
+                                                                      <div className="flex items-center gap-1.5">
+                                                                          {isKilled ? (
+                                                                              <div className="flex items-center gap-1 text-emerald-500">
+                                                                                  <Check className="h-3 w-3" />
+                                                                                  <span>{percent}</span>
+                                                                              </div>
+                                                                          ) : (
+                                                                              <div className="flex items-center gap-1 text-red-500">
+                                                                                  <CircleX className="h-3 w-3" />
+                                                                                  <span>Not Killed</span>
+                                                                              </div>
+                                                                          )}
+                                                                      </div>
+                                                                  </div>
+                                                              );
+                                                          })}
+                                                      </div>
+                                                  </TooltipContent>
+                                              </Tooltip>
+                                           </TooltipProvider>
+                                        ) : (
+                                           <span className="text-muted-foreground text-xs">No logs</span>
+                                        )}
+
+                                        {/* Spec Badges for Signup Card (Backup) */}
+                                        {c.specsStr && (
+                                            <div className="flex flex-wrap gap-1">
+                                                {c.specsStr.split(",").map(s => (
+                                                    <Badge key={s} variant="secondary" className="text-[9px] px-1 py-0 h-4">{s.trim()}</Badge>
+                                                ))}
+                                            </div>
+                                        )}
+                                      </div>
+
                                       <div className="flex gap-1">
                                         {diffOrder.map(([k, label]) => {
                                           const variant = c.status[k] === "G" ? "success" : c.status[k] === "Y" ? "warning" : "destructive";
