@@ -561,7 +561,7 @@ function PlayerDashboardContent() {
               <div className="rounded-xl bg-card p-4">
                 <div className="flex items-center justify-between mb-1">
                   <div className="text-2xl font-bold text-foreground">{stats.avgPerformance}%</div>
-                  <div className="text-xs font-medium text-orange-500 bg-orange-500/10 px-2 py-1 rounded-md">Avg Perf</div>
+                  <div className="text-xs font-medium text-orange-500 bg-orange-500/10 px-2 py-1 rounded-md">Average</div>
                 </div>
                 <div className="text-xs text-muted-foreground">Performance Average</div>
               </div>
@@ -748,13 +748,13 @@ function PlayerDashboardContent() {
                                       role = typeof s === "string" ? s : s.role;
                                   }
 
-                                  let badgeClass = "text-xs rounded-full px-2 py-0.5 bg-opacity-20 border-none";
-                                  if (role === "Tank") badgeClass += " bg-blue-500 text-blue-500";
-                                  else if (role === "Healer") badgeClass += " bg-emerald-500 text-emerald-500";
-                                  else badgeClass += " bg-red-500 text-red-500"; // DPS
+                                  let badgeClass = "text-xs rounded-md px-2 py-1 font-medium border-none";
+                                  if (role === "Tank") badgeClass += " bg-blue-500/10 text-blue-500";
+                                  else if (role === "Healer") badgeClass += " bg-emerald-500/10 text-emerald-500";
+                                  else badgeClass += " bg-red-500/10 text-red-500"; // DPS
 
                                   return (
-                                      <Badge variant="outline" className={badgeClass}>{role}</Badge>
+                                      <div className={badgeClass}>{role}</div>
                                   );
                               })()}
                             </div>
