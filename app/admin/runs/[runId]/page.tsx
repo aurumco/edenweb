@@ -579,28 +579,28 @@ export default function AdminRunDetailsPage() {
                                                     </Badge>
                                                 </div>
                                             </TooltipTrigger>
-                                            <TooltipContent className="w-64 p-0 bg-card border border-border/50 shadow-xl rounded-xl overflow-hidden" sideOffset={5}>
-                                                <div className="bg-muted/50 p-3 border-b border-border/50 flex justify-between items-center">
+                                            <TooltipContent className="w-64 p-0 bg-popover text-popover-foreground border border-border shadow-xl rounded-xl overflow-hidden" sideOffset={5}>
+                                                <div className="bg-muted p-3 border-b border-border flex justify-between items-center">
                                                     <div className="flex flex-col">
                                                         <span className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">{assignment.logs.difficulty}</span>
                                                         <span className="font-bold text-sm">Best Avg: {assignment.logs.best_avg}</span>
                                                     </div>
                                                 </div>
-                                                <div className="p-2 grid gap-1">
+                                                <div className="p-2 grid gap-1 bg-popover">
                                                     {Object.entries(assignment.logs.bosses).map(([boss, statusStr]) => {
                                                         const isKilled = statusStr.includes("✅") || !statusStr.includes("Not Killed");
                                                         const percent = statusStr.replace(/✅|❌|Not Killed/g, "").trim();
                                                         return (
-                                                            <div key={boss} className="flex items-center justify-between text-xs p-1 rounded hover:bg-muted/50">
+                                                            <div key={boss} className="flex items-center justify-between text-xs p-1 rounded hover:bg-muted/50 transition-colors">
                                                                 <span className="truncate max-w-[140px] font-medium">{boss}</span>
                                                                 <div className="flex items-center gap-1.5">
                                                                     {isKilled ? (
-                                                                        <div className="flex items-center gap-1 text-emerald-500">
+                                                                        <div className="flex items-center gap-1 text-emerald-500 font-medium">
                                                                             <Check className="h-3 w-3" />
                                                                             <span>{percent}</span>
                                                                         </div>
                                                                     ) : (
-                                                                        <div className="flex items-center gap-1 text-red-500">
+                                                                        <div className="flex items-center gap-1 text-red-500 font-medium">
                                                                             <CircleX className="h-3 w-3" />
                                                                             <span>Not Killed</span>
                                                                         </div>
@@ -717,28 +717,28 @@ export default function AdminRunDetailsPage() {
                                                     </Badge>
                                                 </div>
                                             </TooltipTrigger>
-                                            <TooltipContent className="w-64 p-0 bg-card border border-border/50 shadow-xl rounded-xl overflow-hidden" sideOffset={5}>
-                                                <div className="bg-muted/50 p-3 border-b border-border/50 flex justify-between items-center">
+                                                  <TooltipContent className="w-64 p-0 bg-popover text-popover-foreground border border-border shadow-xl rounded-xl overflow-hidden" sideOffset={5}>
+                                                      <div className="bg-muted p-3 border-b border-border flex justify-between items-center">
                                                     <div className="flex flex-col">
                                                         <span className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">{c.logsData.difficulty}</span>
                                                         <span className="font-bold text-sm">Best Avg: {c.logsData.best_avg}</span>
                                                     </div>
                                                 </div>
-                                                <div className="p-2 grid gap-1">
+                                                      <div className="p-2 grid gap-1 bg-popover">
                                                     {Object.entries(c.logsData.bosses).map(([boss, statusStr]) => {
                                                         const isKilled = statusStr.includes("✅") || !statusStr.includes("Not Killed");
                                                         const percent = statusStr.replace(/✅|❌|Not Killed/g, "").trim();
                                                         return (
-                                                            <div key={boss} className="flex items-center justify-between text-xs p-1 rounded hover:bg-muted/50">
+                                                                  <div key={boss} className="flex items-center justify-between text-xs p-1 rounded hover:bg-muted/50 transition-colors">
                                                                 <span className="truncate max-w-[140px] font-medium">{boss}</span>
                                                                 <div className="flex items-center gap-1.5">
                                                                     {isKilled ? (
-                                                                        <div className="flex items-center gap-1 text-emerald-500">
+                                                                              <div className="flex items-center gap-1 text-emerald-500 font-medium">
                                                                             <Check className="h-3 w-3" />
                                                                             <span>{percent}</span>
                                                                         </div>
                                                                     ) : (
-                                                                        <div className="flex items-center gap-1 text-red-500">
+                                                                              <div className="flex items-center gap-1 text-red-500 font-medium">
                                                                             <CircleX className="h-3 w-3" />
                                                                             <span>Not Killed</span>
                                                                         </div>
@@ -826,28 +826,28 @@ export default function AdminRunDetailsPage() {
                                                           </Badge>
                                                       </div>
                                                   </TooltipTrigger>
-                                                  <TooltipContent className="w-64 p-0 bg-card border border-border/50 shadow-xl rounded-xl overflow-hidden" sideOffset={5}>
-                                                      <div className="bg-muted/50 p-3 border-b border-border/50 flex justify-between items-center">
+                                                  <TooltipContent className="w-64 p-0 bg-popover text-popover-foreground border border-border shadow-xl rounded-xl overflow-hidden" sideOffset={5}>
+                                                      <div className="bg-muted p-3 border-b border-border flex justify-between items-center">
                                                           <div className="flex flex-col">
                                                               <span className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">{c.logsData.difficulty}</span>
                                                               <span className="font-bold text-sm">Best Avg: {c.logsData.best_avg}</span>
                                                           </div>
                                                       </div>
-                                                      <div className="p-2 grid gap-1">
+                                                      <div className="p-2 grid gap-1 bg-popover">
                                                           {Object.entries(c.logsData.bosses).map(([boss, statusStr]) => {
                                                               const isKilled = statusStr.includes("✅") || !statusStr.includes("Not Killed");
                                                               const percent = statusStr.replace(/✅|❌|Not Killed/g, "").trim();
                                                               return (
-                                                                  <div key={boss} className="flex items-center justify-between text-xs p-1 rounded hover:bg-muted/50">
+                                                                  <div key={boss} className="flex items-center justify-between text-xs p-1 rounded hover:bg-muted/50 transition-colors">
                                                                       <span className="truncate max-w-[140px] font-medium">{boss}</span>
                                                                       <div className="flex items-center gap-1.5">
                                                                           {isKilled ? (
-                                                                              <div className="flex items-center gap-1 text-emerald-500">
+                                                                              <div className="flex items-center gap-1 text-emerald-500 font-medium">
                                                                                   <Check className="h-3 w-3" />
                                                                                   <span>{percent}</span>
                                                                               </div>
                                                                           ) : (
-                                                                              <div className="flex items-center gap-1 text-red-500">
+                                                                              <div className="flex items-center gap-1 text-red-500 font-medium">
                                                                                   <CircleX className="h-3 w-3" />
                                                                                   <span>Not Killed</span>
                                                                               </div>

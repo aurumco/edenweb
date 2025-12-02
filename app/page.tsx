@@ -26,7 +26,7 @@ export default function Home() {
       <header>
         <div className="container mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
           <Link href="/" className="flex items-center gap-2 text-sm">
-            <span className={`${logoFont.className} inline-flex h-8 px-3 items-center justify-center rounded-lg bg-primary/10 text-primary text-base tracking-wide`}>eden.</span>
+            <span className={`${logoFont.className} inline-flex h-8 px-3 items-center justify-center rounded-lg bg-orange-500/20 text-orange-500 text-base tracking-wide leading-none`}>e.</span>
           </Link>
           <nav className="flex items-center gap-3">
             <ThemeToggle />

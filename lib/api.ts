@@ -129,6 +129,8 @@ export interface Character {
   // Additional fields that might appear in specific contexts (like signup availability)
   is_locked?: boolean;
   is_locked_by_system?: boolean;
+  logs?: string | any;
+  role?: string;
 }
 
 export const characterApi = {
