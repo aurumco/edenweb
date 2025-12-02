@@ -560,7 +560,9 @@ export default function AdminRunDetailsPage() {
                                 <div className="flex flex-col">
                                   <div className="flex items-center gap-1.5">
                                     <span className="text-sm font-semibold leading-tight truncate">{assignment.charName}</span>
-                                    {assignment.spec && <Badge variant="secondary" className="px-1 py-0 text-[10px] h-4 leading-none font-normal bg-secondary/50 border border-border/50">{assignment.spec}</Badge>}
+                                    {assignment.spec && assignment.spec.split(",").map(s => (
+                                        <Badge key={s} variant="secondary" className="px-1.5 py-0 text-[10px] h-5 items-center font-medium bg-secondary text-secondary-foreground border border-border/50">{s.trim()}</Badge>
+                                    ))}
                                   </div>
                                   <span className="text-[11px] text-muted-foreground leading-tight truncate">{assignment.name} · {assignment.class} {assignment.ilevel}</span>
                                 </div>
@@ -570,8 +572,11 @@ export default function AdminRunDetailsPage() {
                                     <TooltipProvider delayDuration={0}>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
-                                                <div className="relative flex h-7 w-7 cursor-help items-center justify-center rounded-full text-muted-foreground/70 hover:bg-secondary hover:text-foreground">
-                                                    <HelpCircle className="h-4 w-4" />
+                                                <div className="flex items-center gap-1 cursor-help hover:opacity-80 transition-opacity">
+                                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 gap-1 border-muted-foreground/30 font-medium">
+                                                        <Shield className="h-3 w-3" />
+                                                        {assignment.logs.best_avg}%
+                                                    </Badge>
                                                 </div>
                                             </TooltipTrigger>
                                             <TooltipContent className="w-64 p-0 bg-card border border-border/50 shadow-xl rounded-xl overflow-hidden" sideOffset={5}>
@@ -706,7 +711,7 @@ export default function AdminRunDetailsPage() {
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <div className="flex items-center gap-1 cursor-help hover:opacity-80 transition-opacity">
-                                                    <Badge variant="outline" className="text-[10px] px-1 py-0 h-5 gap-1 border-muted-foreground/30">
+                                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 gap-1 border-muted-foreground/30 font-medium">
                                                         <Shield className="h-3 w-3" />
                                                         {c.logsData.best_avg}%
                                                     </Badge>
@@ -754,7 +759,7 @@ export default function AdminRunDetailsPage() {
                                   {c.specsStr && (
                                       <div className="flex flex-wrap gap-1">
                                           {c.specsStr.split(",").map(s => (
-                                              <Badge key={s} variant="secondary" className="text-[9px] px-1 py-0 h-4">{s.trim()}</Badge>
+                                              <Badge key={s} variant="secondary" className="px-1.5 py-0 text-[10px] h-5 items-center font-medium bg-secondary text-secondary-foreground border border-border/50">{s.trim()}</Badge>
                                           ))}
                                       </div>
                                   )}
@@ -815,7 +820,7 @@ export default function AdminRunDetailsPage() {
                                               <Tooltip>
                                                   <TooltipTrigger asChild>
                                                       <div className="flex items-center gap-1 cursor-help hover:opacity-80 transition-opacity">
-                                                          <Badge variant="outline" className="text-[10px] px-1 py-0 h-5 gap-1 border-muted-foreground/30">
+                                                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 gap-1 border-muted-foreground/30 font-medium">
                                                               <Shield className="h-3 w-3" />
                                                               {c.logsData.best_avg}%
                                                           </Badge>
@@ -863,7 +868,7 @@ export default function AdminRunDetailsPage() {
                                         {c.specsStr && (
                                             <div className="flex flex-wrap gap-1">
                                                 {c.specsStr.split(",").map(s => (
-                                                    <Badge key={s} variant="secondary" className="text-[9px] px-1 py-0 h-4">{s.trim()}</Badge>
+                                                    <Badge key={s} variant="secondary" className="px-1.5 py-0 text-[10px] h-5 items-center font-medium bg-secondary text-secondary-foreground border border-border/50">{s.trim()}</Badge>
                                                 ))}
                                             </div>
                                         )}

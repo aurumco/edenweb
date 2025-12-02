@@ -179,12 +179,26 @@ function PlayerDashboardContent() {
       setLoadingChars(true);
       const data = await characterApi.list();
       // Ensure specs is array, if string parse it (though type says array, sometimes API might return string)
-      const sanitizedData = data.map((c) => ({
-        ...c,
-        specs: Array.isArray(c.specs) ? c.specs : (typeof c.specs === "string" ? JSON.parse(c.specs) : []),
-        status: c.status ?? "AVAILABLE",
-        locks: c.locks || {},
-      }));
+      const sanitizedData = data.map((c: any) => {
+        let specs = Array.isArray(c.specs) ? c.specs : (typeof c.specs === "string" ? JSON.parse(c.specs) : []);
+
+        // If specs array is empty, try to populate from 'spec' and 'role' fields
+        if (specs.length === 0 && (c.spec || c.role)) {
+            const role = c.role || "DPS"; // fallback
+            if (c.spec) {
+                specs = c.spec.split(",").map((s: string) => ({ spec: s.trim(), role: role }));
+            } else {
+                specs = [{ spec: role, role: role }];
+            }
+        }
+
+        return {
+            ...c,
+            specs: specs,
+            status: c.status ?? "AVAILABLE",
+            locks: c.locks || {},
+        };
+      });
       setCharacters(sanitizedData);
     } catch (err) {
       toast.error("Failed to load characters");
