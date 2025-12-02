@@ -741,7 +741,6 @@ function PlayerDashboardContent() {
                                   let role = "DPS"; // Default
                                   // Prefer explicit role field if available
                                   // The API returns "role": "DPS" or similar.
-                                  // @ts-expect-error role is not typed in Character interface yet
                                   if (c.role) role = c.role;
                                   else if (c.specs && c.specs.length > 0) {
                                       // Fallback to deriving from specs if role field is missing
