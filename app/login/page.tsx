@@ -11,7 +11,7 @@ export default function LoginPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  // Redirect to dashboard if already logged in
+  
   useEffect(() => {
     if (!loading && user) {
       router.push("/dashboard");
@@ -33,16 +33,16 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Left side - Login form */}
+      {}
       <div className="w-full md:w-1/2 flex items-center justify-center px-4 py-8 md:py-0">
         <div className="w-full max-w-sm space-y-8">
-          {/* Logo */}
+          {}
           <div className="space-y-2">
             <h2 className="text-sm font-medium text-muted-foreground">Log in to</h2>
             <h1 className="text-4xl font-bold">eden.</h1>
           </div>
 
-          {/* Discord Login Button */}
+          {}
           <Button
             onClick={handleDiscordLogin}
             size="lg"
@@ -60,7 +60,7 @@ export default function LoginPage() {
             Login with Discord
           </Button>
 
-          {/* Footer text */}
+          {}
           <div className="space-y-2 text-xs text-muted-foreground">
             <p>
               By logging in, you agree to our{" "}
@@ -77,7 +77,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right side - Image (hidden on mobile) */}
+      {}
       <div className="hidden md:flex w-1/2 relative overflow-hidden bg-muted">
         <Image
           src="/login.webp"

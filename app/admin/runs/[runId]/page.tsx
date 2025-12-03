@@ -25,11 +25,11 @@ type Difficulty = (typeof DIFFICULTIES)[number];
 type SlotRole = "Tank" | "Healer" | "DPS";
 
 const SPEC_ROLES: Record<string, SlotRole> = {
-  // Tanks
+  
   "Blood": "Tank", "Vengeance": "Tank", "Guardian": "Tank", "Brewmaster": "Tank", "Protection": "Tank",
-  // Healers
+  
   "Restoration": "Healer", "Holy": "Healer", "Discipline": "Healer", "Mistweaver": "Healer", "Preservation": "Healer",
-  // DPS
+  
   "Frost": "DPS", "Unholy": "DPS", "Havoc": "DPS", "Balance": "DPS", "Feral": "DPS", "Augmentation": "DPS", "Devastation": "DPS", "Beast Mastery": "DPS", "Marksmanship": "DPS", "Survival": "DPS", "Arcane": "DPS", "Fire": "DPS", "Windwalker": "DPS", "Retribution": "DPS", "Shadow": "DPS", "Assassination": "DPS", "Outlaw": "DPS", "Subtlety": "DPS", "Elemental": "DPS", "Enhancement": "DPS", "Affliction": "DPS", "Demonology": "DPS", "Destruction": "DPS", "Arms": "DPS", "Fury": "DPS"
 };
 
@@ -40,10 +40,10 @@ interface Character {
   id: string;
   class: string;
   ilevel: number;
-  roles: SlotRole[]; // e.g. ["Healer", "DPS"]
-  log?: number; // e.g. 99 (deprecated for logsData)
+  roles: SlotRole[]; 
+  log?: number; 
   status: CharacterStatus;
-  name?: string; // character name
+  name?: string; 
   apiStatus: "AVAILABLE" | "UNAVAILABLE";
   specsStr?: string;
   logsData?: CharacterLogs;
@@ -102,7 +102,7 @@ export default function AdminRunDetailsPage() {
   const [classFilter, setClassFilter] = useState<string | "All">("All");
   const [mention, setMention] = useState(false);
   
-  // Initial capacities, updated after run fetch
+  
   const [capacities, setCapacities] = useState<Record<SlotRole, number>>({ Tank: 2, Healer: 4, DPS: 14 });
 
   const [roster, setRoster] = useState<Record<SlotRole, (Assignment | null)[]>>({
@@ -111,15 +111,15 @@ export default function AdminRunDetailsPage() {
     DPS: Array.from({ length: 14 }, () => null),
   });
 
-  // Fetch signups, roster, and characters on mount
+  
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         
-        // Also fetch run for capacities
+        
         const [runData, signupsData, rosterData] = await Promise.all([
-            runApi.get("unused", runId), // serverId is unused in my new api implementation
+            runApi.get("unused", runId), 
             signupApi.list(runId),
             rosterApi.get(runId),
         ]);
@@ -132,7 +132,7 @@ export default function AdminRunDetailsPage() {
         });
         setDifficulty(runData.difficulty);
 
-        // Re-initialize roster based on new capacity
+        
         const newRoster = {
             Tank: Array.from({ length: runData.tank_capacity }, () => null) as (Assignment | null)[],
             Healer: Array.from({ length: runData.healer_capacity }, () => null) as (Assignment | null)[],
@@ -142,21 +142,21 @@ export default function AdminRunDetailsPage() {
         const mappedSignups: Signup[] = [];
 
         (signupsData as any[]).forEach((s: any) => {
-            // Use display_name, fallback to user_id if missing
+            
             const player: Player = { 
                 id: s.user_id, 
                 name: s.display_name || s.user?.username || s.user_id 
             };
             
-            // Use available_characters as per new doc, fallback to s.characters if available_characters missing
+            
             const sourceChars = s.available_characters || s.characters || [];
 
             const chars: Character[] = sourceChars.map((c: any) => {
-                 // specs parsing
+                 
                  let roles: SlotRole[] = [];
                  let specsStr = c.spec || "";
 
-                 // Try to get roles from array first
+                 
                  if (Array.isArray(c.specs)) {
                      roles = c.specs.map((sp: any) => sp.role);
                  } else if (typeof c.specs === "string" && c.specs.startsWith("[")) {
@@ -166,7 +166,7 @@ export default function AdminRunDetailsPage() {
                      } catch {}
                  }
 
-                 // If no roles found but we have spec string, try to infer
+                 
                  if (roles.length === 0 && specsStr) {
                      const parts = specsStr.split(",").map((x: string) => x.trim());
                      parts.forEach((p: string) => {
@@ -174,13 +174,13 @@ export default function AdminRunDetailsPage() {
                      });
                  }
 
-                 // Fallback if still no roles (shouldn't happen with valid data)
+                 
                  if (roles.length === 0) {
-                     // Assume all roles valid for class? No, default to DPS to be safe
+                     
                      roles = ["DPS"];
                  }
 
-                 // Logs parsing
+                 
                  let logsData: CharacterLogs | undefined = undefined;
                  if (c.logs) {
                      if (typeof c.logs === "object") logsData = c.logs;
@@ -191,7 +191,7 @@ export default function AdminRunDetailsPage() {
                      }
                  }
                  
-                 // Map API locks to frontend status
+                 
                  const locks = c.locks || {};
                  const getStatus = (diff: string): "G" | "Y" | "R" => {
                      const s = locks[diff]?.status;
@@ -210,7 +210,7 @@ export default function AdminRunDetailsPage() {
                      id: c.id,
                      class: c.char_class,
                      ilevel: c.ilevel,
-                     roles: Array.from(new Set(roles)), // unique roles
+                     roles: Array.from(new Set(roles)), 
                      name: c.char_name,
                      status: status,
                      apiStatus: c.status,
@@ -229,16 +229,16 @@ export default function AdminRunDetailsPage() {
 
         setSignups(mappedSignups);
 
-        // Fill Roster
+        
         rosterData.forEach((slot: RosterSlot) => {
-            // Find character details from signups
+            
             let charDetails: Assignment | null = null;
             
             for (const s of mappedSignups) {
                 if (s.player.id === slot.user_id) {
                      const c = s.characters.find(ch => ch.id === slot.character_id);
                      if (c) {
-                         // Prefer data from signup character (c) as it has parsed logs/specs
+                         
                          charDetails = {
                              playerId: s.player.id,
                              characterId: c.id,
@@ -254,8 +254,8 @@ export default function AdminRunDetailsPage() {
                 }
             }
 
-            // If we found details, place in roster
-            // Map uppercase roles from API (TANK, HEALER, DPS) to frontend keys (Tank, Healer, DPS)
+            
+            
             let roleKey: SlotRole | null = null;
             if (slot.assigned_role === "TANK") roleKey = "Tank";
             else if (slot.assigned_role === "HEALER") roleKey = "Healer";
@@ -269,26 +269,26 @@ export default function AdminRunDetailsPage() {
             }
         });
         
-        // After populating roster, update character statuses for assigned characters (Optimistic UI state)
-        // Note: The API should have returned correct locks, so "R" (LOCKED) or "Y" (PENDING) should already be there.
-        // However, if we just assigned them via drag and drop without refreshing, we want to reflect "Y" or "R".
-        // The previous logic was overriding everything. Now we respect API unless assigned here.
+        
+        
+        
+        
         
         const isCompleted = runData.status === "COMPLETED";
         
         const updatedSignups = mappedSignups.map(s => ({
             ...s,
             characters: s.characters.map(c => {
-                // Check if this character is in the roster
+                
                 const isAssigned = Object.values(newRoster).some(slots => slots.some(a => a?.characterId === c.id));
                 
                 if (isAssigned) {
                     const key = runData.difficulty === "Mythic" ? "M" : runData.difficulty === "Heroic" ? "H" : "N";
                     const newStatus = { ...c.status };
-                    // If assigned, it should be PENDING (Y) or LOCKED (R)
-                    // We assume PENDING if not completed, LOCKED if completed.
-                    // This is an optimistic override for the current run's difficulty.
-                    // @ts-ignore
+                    
+                    
+                    
+                    
                     newStatus[key] = isCompleted ? "R" : "Y";
                     return { ...c, status: newStatus };
                 }
@@ -330,7 +330,7 @@ export default function AdminRunDetailsPage() {
         return;
       }
       
-      // Optimistic update
+      
       const prevRoster = { ...roster };
       setRoster(prev => {
         const next = { ...prev, [role]: [...prev[role]] } as typeof prev;
@@ -338,14 +338,14 @@ export default function AdminRunDetailsPage() {
         return next;
       });
       
-      // Update character status to Yellow
+      
       setSignups(prev => prev.map(s => ({
           ...s,
           characters: s.characters.map(c => {
               if (c.id === data.characterId) {
                   const key = difficulty === "Mythic" ? "M" : difficulty === "Heroic" ? "H" : "N";
                   const newStatus = { ...c.status };
-                  // @ts-ignore
+                  
                   newStatus[key] = "Y"; 
                   return { ...c, status: newStatus };
               }
@@ -353,9 +353,9 @@ export default function AdminRunDetailsPage() {
           })
       })));
 
-      // API Call
+      
       try {
-          // Map frontend role to API role (uppercase)
+          
           const apiRole = role === "Tank" ? "TANK" : role === "Healer" ? "HEALER" : "DPS";
           
           await rosterApi.add(runId, {
@@ -366,8 +366,8 @@ export default function AdminRunDetailsPage() {
           toast.success("Picked for roster.");
       } catch (err) {
           toast.error("Failed to update roster.");
-          setRoster(prevRoster); // Revert
-          // Revert status if needed, though complex without deep clone or refresh
+          setRoster(prevRoster); 
+          
       }
 
     } catch (e) {
@@ -379,7 +379,7 @@ export default function AdminRunDetailsPage() {
     const slot = roster[role][index];
     if (!slot) return;
     
-    // Optimistic remove
+    
     const prevRoster = { ...roster };
     setRoster(prev => {
         const next = { ...prev, [role]: [...prev[role]] } as typeof prev;
@@ -387,22 +387,22 @@ export default function AdminRunDetailsPage() {
         return next;
     });
     
-    // Reset Character Status to Green (Available) or Yellow if pending elsewhere (complex, reverting to simple G)
-    // Actually, if we unassign, we don't know if they are pending elsewhere without re-fetching.
-    // For now, we can optimistically set to Green in the signups list for this run's difficulty.
+    
+    
+    
     
     try {
         await rosterApi.delete(runId, slot.characterId);
         toast.success("Removed from roster.");
         
-        // Update Signup Status
+        
         setSignups(prev => prev.map(s => ({
             ...s,
             characters: s.characters.map(c => {
                 if (c.id === slot.characterId) {
                     const key = difficulty === "Mythic" ? "M" : difficulty === "Heroic" ? "H" : "N";
                     const newStatus = { ...c.status };
-                    // @ts-ignore
+                    
                     newStatus[key] = "G";
                     return { ...c, status: newStatus };
                 }
@@ -420,16 +420,16 @@ export default function AdminRunDetailsPage() {
   async function handleCompleteRun() {
       try {
           await runApi.updateStatus(runId, "COMPLETED");
-           // Update UI
+           
            setSignups(prev => prev.map(s => ({
               ...s,
               characters: s.characters.map(c => {
                 const assigned = Object.values(roster).some(slots => slots.some(a => a?.characterId === c.id));
                 if (!assigned) return c;
-                // Mark as Locked
+                
                 const key = difficulty === "Mythic" ? "M" : difficulty === "Heroic" ? "H" : "N";
                 const newStatus = { ...c.status };
-                // @ts-ignore
+                
                 newStatus[key] = "R";
                 return { ...c, status: newStatus };
               })
@@ -461,7 +461,7 @@ export default function AdminRunDetailsPage() {
   return (
     <AdminShell>
       <div className="space-y-4">
-        {/* Header */}
+        {}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1">
             <h1 className="text-xl font-semibold">Run #{run?.title || runId}</h1>
@@ -522,10 +522,10 @@ export default function AdminRunDetailsPage() {
           </div>
         </div>
 
-        {/* Columns */}
+        {}
         <Card className="overflow-hidden">
           <ResizablePanelGroup direction="horizontal" className="min-h-[70vh]">
-            {/* Roster */}
+            {}
             <ResizablePanel defaultSize={50} minSize={30} className="p-4">
               <h2 className="mb-3 text-sm font-semibold text-muted-foreground">Roster</h2>
               <div className="grid grid-cols-1 gap-4">
@@ -634,7 +634,7 @@ export default function AdminRunDetailsPage() {
             </ResizablePanel>
             <ResizableHandle withHandle />
 
-            {/* Signups with integrated Character Details */}
+            {}
             <ResizablePanel defaultSize={50} minSize={30} className="p-4">
               <h2 className="mb-3 text-sm font-semibold text-muted-foreground">Signups</h2>
               <div className="mb-3 flex items-center gap-2">
@@ -659,7 +659,7 @@ export default function AdminRunDetailsPage() {
               </div>
               <ScrollArea className="pr-3">
                 <div className="space-y-2">
-                  {/* Signed Players */}
+                  {}
                   {signups.filter(s => s.signed).map(s => {
                     const filteredChars = s.characters.filter(c => (roleFilter === "All" || c.roles.includes(roleFilter)) && (classFilter === "All" || c.class === classFilter));
                     if (filteredChars.length === 0) return null;
@@ -755,7 +755,7 @@ export default function AdminRunDetailsPage() {
                                      <span className="text-muted-foreground text-xs">No logs</span>
                                   )}
 
-                                  {/* Spec Badges for Signup Card */}
+                                  {}
                                   {c.specsStr && (
                                       <div className="flex flex-wrap gap-1">
                                           {c.specsStr.split(",").map(s => (
@@ -779,7 +779,7 @@ export default function AdminRunDetailsPage() {
                     </Collapsible>
                   )})}
 
-                  {/* Backup Players Section */}
+                  {}
                   {signups.filter(s => s.backup).length > 0 && (
                     <div className="mt-6 pt-4 border-t border-border/30">
                       <h3 className="text-xs font-medium text-muted-foreground mb-2">Backup</h3>
@@ -864,7 +864,7 @@ export default function AdminRunDetailsPage() {
                                            <span className="text-muted-foreground text-xs">No logs</span>
                                         )}
 
-                                        {/* Spec Badges for Signup Card (Backup) */}
+                                        {}
                                         {c.specsStr && (
                                             <div className="flex flex-wrap gap-1">
                                                 {c.specsStr.split(",").map(s => (

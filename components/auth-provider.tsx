@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setError(null);
       } catch (err) {
         setUser(null);
-        // 401 is expected when not logged in
+        
         if (err instanceof Object && "status" in err && err.status !== 401) {
           setError((err as any).message || "Failed to fetch user");
         }

@@ -43,7 +43,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen">
-      {/* Topbar */}
+      {}
       <div className="sticky top-0 z-40 flex h-14 items-center border-b border-border bg-background/80 backdrop-blur">
         <div className="container mx-auto flex items-center justify-between px-4">
           <div className="flex items-center gap-2">
@@ -72,7 +72,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </div>
-      {/* Content area with sidebar on desktop */}
+      {}
       <div className="container mx-auto grid grid-cols-1 gap-6 px-4 py-6 md:grid-cols-[260px_minmax(0,1fr)]">
         <aside className="hidden md:block">
           <div className="sticky top-20 h-[calc(100vh-5rem)] rounded-lg border border-border bg-card">

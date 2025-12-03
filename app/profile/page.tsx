@@ -22,14 +22,14 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Redirect if not logged in
+  
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/login");
     }
   }, [user, authLoading, router]);
 
-  // Fetch profile data
+  
   useEffect(() => {
     if (!authLoading && user) {
       const fetchProfile = async () => {
@@ -67,7 +67,7 @@ export default function ProfilePage() {
     return (
       <PlayerShell>
         <div className="space-y-6">
-          {/* Identity Card Skeleton */}
+          {}
           <Card>
             <CardHeader>
               <div className="flex items-center gap-4">
@@ -80,7 +80,7 @@ export default function ProfilePage() {
             </CardHeader>
           </Card>
 
-          {/* Finance Cards Skeleton */}
+          {}
           <div className="grid gap-4 md:grid-cols-3">
             {[1, 2, 3].map((i) => (
               <Card key={i}>
@@ -94,7 +94,7 @@ export default function ProfilePage() {
             ))}
           </div>
 
-          {/* Stats Skeleton */}
+          {}
           <Card>
             <CardHeader>
               <Skeleton className="h-6 w-32" />
@@ -129,7 +129,7 @@ export default function ProfilePage() {
   return (
     <PlayerShell>
       <div className="space-y-6">
-        {/* Identity Card */}
+        {}
         <Card>
           <CardHeader>
             <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
@@ -164,9 +164,9 @@ export default function ProfilePage() {
           </CardHeader>
         </Card>
 
-        {/* Financial Stats */}
+        {}
         <div className="grid gap-4 md:grid-cols-3">
-          {/* Wallet Balance */}
+          {}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
@@ -184,7 +184,7 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
-          {/* Pending Escrow */}
+          {}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
@@ -202,7 +202,7 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
-          {/* Wallet Address */}
+          {}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Wallet Address</CardTitle>
@@ -238,7 +238,7 @@ export default function ProfilePage() {
           </Card>
         </div>
 
-        {/* Performance Stats */}
+        {}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -265,7 +265,7 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Aliases Section */}
+        {}
         {profile.aliases.length > 0 && (
           <Card>
             <CardHeader>

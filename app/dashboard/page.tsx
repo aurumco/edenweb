@@ -148,7 +148,7 @@ function PlayerDashboardContent() {
     mode: "onChange",
   });
 
-  // Fetch characters on mount
+  
   useEffect(() => {
     if (!authLoading && user) {
       fetchCharacters();
@@ -167,8 +167,8 @@ function PlayerDashboardContent() {
         char_class: edit.char_class,
         roles: roles,
         char_name: edit.char_name,
-        // Assuming edit.specs might contain role info, but if we start saving 'spec' in backend we might need to parse it. 
-        // For now, if 'specs' is available in edit object, we try to extract spec names if they match known specs.
+        
+        
         specs: edit.specs.map(s => s.spec).filter(s => CLASS_SPECS[edit.char_class]?.includes(s))
       });
     }
@@ -178,14 +178,14 @@ function PlayerDashboardContent() {
     try {
       setLoadingChars(true);
       const data = await characterApi.list();
-      // Ensure specs is array, if string parse it (though type says array, sometimes API might return string)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      
+      
       const sanitizedData = data.map((c: any) => {
         let specs = Array.isArray(c.specs) ? c.specs : (typeof c.specs === "string" ? JSON.parse(c.specs) : []);
 
-        // If specs array is empty, try to populate from 'spec' and 'role' fields
+        
         if (specs.length === 0 && (c.spec || c.role)) {
-            const role = c.role || "DPS"; // fallback
+            const role = c.role || "DPS"; 
             if (c.spec) {
                 specs = c.spec.split(",").map((s: string) => ({ spec: s.trim(), role: role }));
             } else {
@@ -219,8 +219,8 @@ function PlayerDashboardContent() {
       await Promise.all(runIds.map(async (rid) => {
           try {
               const s = await signupApi.list(rid);
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const mySignup = s.find((x: any) => x.user_id === user?.userId); // Assuming user_id matches
+              
+              const mySignup = s.find((x: any) => x.user_id === user?.userId); 
               if (mySignup) allSignups.push(mySignup);
           } catch {}
       }));
@@ -265,8 +265,8 @@ function PlayerDashboardContent() {
 
     try {
       setSubmittingChar(true);
-      // Explicitly construct payload with only allowed fields
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      
+      
       const payload: any = {
         char_name: data.char_name?.trim() || "Unnamed",
         char_class: data.char_class,
@@ -305,7 +305,7 @@ function PlayerDashboardContent() {
       try {
           setSubmittingChar(true);
           
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          
           const payload: any = {
             char_name: data.char_name?.trim(),
             char_class: data.char_class,
@@ -361,7 +361,7 @@ function PlayerDashboardContent() {
     characters.forEach(c => {
         if (c.logs) {
             try {
-                // logs is often a stringified JSON if it comes from API as a string
+                
                 let logsData;
                 if (typeof c.logs === 'string') {
                     logsData = JSON.parse(c.logs);
@@ -377,7 +377,7 @@ function PlayerDashboardContent() {
                     }
                 }
             } catch (e) {
-                // ignore parsing error
+                
             }
         }
     });
@@ -393,7 +393,7 @@ function PlayerDashboardContent() {
   }, [characters]);
 
   const handleToggleLock = async (character: Character, difficulty: string) => {
-    // Check if system locked
+    
     const lockInfo = character.locks?.[difficulty];
     if (lockInfo?.isLockedBySystem) {
         toast.error("This lock is managed by the system and cannot be changed.");
@@ -402,20 +402,20 @@ function PlayerDashboardContent() {
 
     const currentStatus = lockInfo?.status || "AVAILABLE";
     
-    // Logic:
-    // If LOCKED -> Unlocks to AVAILABLE
-    // If AVAILABLE -> Locks to LOCKED
+    
+    
+    
     
     const newStatus = currentStatus === "LOCKED" ? "AVAILABLE" : "LOCKED";
     const oldLocks = { ...character.locks };
 
-    // Optimistic update
+    
     setCharacters(prev => prev.map(c => {
         if (c.id !== character.id) return c;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        
         const newLocks: any = { ...(c.locks || {}) };
 
-        // Update the lock object
+        
         newLocks[difficulty] = {
             status: newStatus as "AVAILABLE" | "LOCKED" | "PENDING",
             isLocked: newStatus === "LOCKED",
@@ -430,7 +430,7 @@ function PlayerDashboardContent() {
         toast.success(`Marked ${difficulty} as ${newStatus === "LOCKED" ? "Locked" : "Available"}.`);
     } catch (err) {
         toast.error("Failed to update status");
-        // Revert
+        
         setCharacters(prev => prev.map(c => c.id === character.id ? { ...c, locks: oldLocks } : c));
     }
   };
@@ -467,7 +467,7 @@ function PlayerDashboardContent() {
     setTab((prev) => (prev !== next ? next : prev));
   }, [searchParams]);
 
-  // Shared Spec Selection Component Logic
+  
   const SpecSelection = ({ currentForm, isEdit = false }: { currentForm: typeof form | typeof editForm, isEdit?: boolean }) => {
       const selectedClass = currentForm.watch("char_class");
       const selectedSpecs = currentForm.watch("specs") || [];
@@ -584,7 +584,7 @@ function PlayerDashboardContent() {
                       <DialogTitle>Add Character</DialogTitle>
                       <DialogDescription>Enter the character details.</DialogDescription>
                     </DialogHeader>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    {}
                     <form onSubmit={form.handleSubmit(onSubmit as any)} className="grid gap-4">
                       <div className="grid gap-2">
                         <Label htmlFor="char_name">Name</Label>
@@ -641,14 +641,14 @@ function PlayerDashboardContent() {
                   </DialogContent>
                 </Dialog>
 
-                {/* Edit Dialog */}
+                {}
                 <Dialog open={!!edit} onOpenChange={(open) => { if(!open) setEdit(null); }}>
                     <DialogContent className="bg-card">
                     <DialogHeader>
                       <DialogTitle>Edit Character</DialogTitle>
                       <DialogDescription>Update the character details.</DialogDescription>
                     </DialogHeader>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    {}
                     <form onSubmit={editForm.handleSubmit(onEditSubmit as any)} className="grid gap-4">
                       <div className="grid gap-2">
                         <Label htmlFor="edit_char_name">Name</Label>
@@ -738,12 +738,12 @@ function PlayerDashboardContent() {
                           <TableCell>
                             <div className="flex flex-wrap items-center gap-1.5">
                               {(() => {
-                                  let role = "DPS"; // Default
-                                  // Prefer explicit role field if available
-                                  // The API returns "role": "DPS" or similar.
+                                  let role = "DPS"; 
+                                  
+                                  
                                   if (c.role) role = c.role;
                                   else if (c.specs && c.specs.length > 0) {
-                                      // Fallback to deriving from specs if role field is missing
+                                      
                                       const s = c.specs[0];
                                       role = typeof s === "string" ? s : s.role;
                                   }
@@ -751,7 +751,7 @@ function PlayerDashboardContent() {
                                   let badgeClass = "text-xs rounded-md px-2 py-1 font-medium border-none";
                                   if (role === "Tank") badgeClass += " bg-blue-500/10 text-blue-500";
                                   else if (role === "Healer") badgeClass += " bg-emerald-500/10 text-emerald-500";
-                                  else badgeClass += " bg-red-500/10 text-red-500"; // DPS
+                                  else badgeClass += " bg-red-500/10 text-red-500"; 
 
                                   return (
                                       <div className={badgeClass}>{role}</div>
@@ -768,12 +768,12 @@ function PlayerDashboardContent() {
                                     const status = lockInfo?.status || "AVAILABLE";
                                     const isLockedBySystem = lockInfo?.isLockedBySystem || false;
                                     
-                                    // Logic: Green (Available), Red (Locked), Yellow (Pending)
+                                    
                                     let variant: "destructive" | "success" | "warning" = "success";
                                     if (status === "LOCKED") variant = "destructive";
                                     else if (status === "PENDING") variant = "warning";
                                     
-                                    // Allow Green <-> Red. Disable Yellow (PENDING) and System Locked.
+                                    
                                     const canToggle = status !== "PENDING" && !isLockedBySystem;
                                     
                                     return (
@@ -916,7 +916,7 @@ function PlayerDashboardContent() {
                             <TableCell className="hidden sm:table-cell">
                               <Badge variant={r.difficulty === "Mythic" ? "mythic" : r.difficulty === "Heroic" ? "heroic" : "normal"} className="px-2 py-0.5 text-xs rounded-full">{r.difficulty}</Badge>
                             </TableCell>
-                            <TableCell className="text-xs text-muted-foreground">{new Date(r.scheduled_at).toLocaleDateString('en-GB', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-')}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{new Date(r.scheduled_at).toLocaleDateString('en-GB', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\
                             <TableCell>
                               <Badge variant={r.status === "ACTIVE" ? "success" : r.status === "PENDING" ? "warning" : "info"} className="px-2 py-0.5 text-xs rounded-full">{r.status.charAt(0).toUpperCase() + r.status.slice(1).toLowerCase()}</Badge>
                             </TableCell>

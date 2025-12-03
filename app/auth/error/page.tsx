@@ -14,7 +14,7 @@ function AuthErrorContent() {
   const error = searchParams.get("error");
   const errorDescription = searchParams.get("error_description");
 
-  // Map error codes to user-friendly messages
+  
   const getErrorMessage = () => {
     switch (error) {
       case "access_denied":

@@ -17,7 +17,7 @@ const badgeVariants = cva(
           "bg-destructive/10 text-destructive [a&]:hover:bg-destructive/30",
         outline:
           "bg-accent/50 text-foreground [a&]:hover:bg-accent",
-        // status variants
+        
         success:
           "bg-emerald-500/10 text-emerald-500",
         warning:
@@ -26,7 +26,7 @@ const badgeVariants = cva(
           "bg-sky-500/10 text-sky-500",
         neutral:
           "bg-red-500/10 text-red-500",
-        // difficulty variants
+        
         mythic:
           "bg-rose-600/10 text-rose-400",
         heroic:

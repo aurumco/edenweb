@@ -32,13 +32,13 @@ async function apiCall<T>(
         error.message = (data as any).message || error.message;
       }
     } catch {
-      // If response is not JSON, use default message
+      
     }
 
     throw error;
   }
 
-  // For 204 No Content or empty responses
+  
   if (response.status === 204) {
       return {} as T;
   }
@@ -50,7 +50,7 @@ async function apiCall<T>(
   }
 }
 
-// Auth endpoints
+
 export interface AuthUser {
   userId: string;
   username: string;
@@ -94,7 +94,7 @@ export const authApi = {
   getProfile: () => apiCall<UserProfile>("/api/profile"),
 };
 
-// Character endpoints
+
 export interface CharacterSpec {
     spec: string;
     role: string;
@@ -105,7 +105,7 @@ export interface CharacterInput {
   char_name: string;
   char_class: string;
   ilevel: number;
-  // Optional specs for frontend usage, but we will exclude it from payload if needed
+  
   specs?: CharacterSpec[];
   spec?: string;
 }
@@ -122,11 +122,11 @@ export interface Character {
   char_class: string;
   ilevel: number;
   specs: CharacterSpec[];
-  // For backwards compatibility or specific contexts where flat status is used
+  
   status?: "AVAILABLE" | "UNAVAILABLE" | "PENDING" | "LOCKED";
-  // Updated locks structure
+  
   locks?: Record<string, CharacterLock>;
-  // Additional fields that might appear in specific contexts (like signup availability)
+  
   is_locked?: boolean;
   is_locked_by_system?: boolean;
   logs?: string | any;
@@ -154,14 +154,14 @@ export const characterApi = {
     apiCall<void>(`/api/characters/${id}`, { method: "DELETE" }),
 };
 
-// Run endpoints
+
 export interface RunInput {
   server_id: string;
   title: string;
   difficulty: "Mythic" | "Heroic" | "Normal";
   scheduled_at: string;
   roster_channel_id: string;
-  discord_channel_id: string; // Required
+  discord_channel_id: string; 
   embed_text?: string;
   tank_capacity: number;
   healer_capacity: number;
@@ -212,7 +212,7 @@ export const runApi = {
       })
 };
 
-// Signup endpoints
+
 export interface SignupInput {
   signup_type: "MAIN" | "BENCH" | "ALT" | "DECLINE";
 }
@@ -242,7 +242,7 @@ export const signupApi = {
     }),
 };
 
-// Roster endpoints
+
 export interface CharacterLogs {
   difficulty: string;
   best_avg: string;

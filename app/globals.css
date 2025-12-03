@@ -78,12 +78,10 @@ body {
   transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
 }
 
-/* Smooth transitions for common containers */
 [data-slot="card"], [data-slot="tabs-content"], [data-slot="dropdown-menu-content"] {
   transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
 }
 
-/* Minimal themed scrollbars */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;

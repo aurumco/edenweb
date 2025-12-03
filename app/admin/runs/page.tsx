@@ -95,7 +95,7 @@ export default function AdminRunsIndexPage() {
   yesterday.setDate(yesterday.getDate() - 1);
   yesterday.setHours(0, 0, 0, 0);
 
-  // Fetch runs on mount
+  
   useEffect(() => {
     if (!authLoading && user) {
       fetchData();
@@ -133,7 +133,7 @@ export default function AdminRunsIndexPage() {
     try {
       setSubmittingRun(true);
       
-      // Construct ISO string preserving local time
+      
       const date = new Date(data.scheduled_at);
       const hours = parseInt(data.scheduled_hour, 10);
       const minutes = parseInt(data.scheduled_minute, 10);
@@ -146,7 +146,7 @@ export default function AdminRunsIndexPage() {
         difficulty: data.difficulty,
         scheduled_at: scheduledIso,
         roster_channel_id: data.roster_channel_id,
-        discord_channel_id: data.roster_channel_id, // Assuming same for now or needs another input? Scenario mentions both
+        discord_channel_id: data.roster_channel_id, 
         embed_text: data.embed_text,
         tank_capacity: Number(data.tank_capacity),
         healer_capacity: Number(data.healer_capacity),
@@ -213,16 +213,16 @@ export default function AdminRunsIndexPage() {
   }, [filteredRuns, page]);
 
   const stats = useMemo(() => {
-    // Keep local stats calculation for the cards that rely on run list filtering/status if needed,
-    // but the prompt says "Use api/stats for the top information".
-    // The previous implementation used filtered counts from 'runs'.
-    // I will replace the main cards with global stats where applicable, or keep them if they represent something else.
-    // The user said "info written at the top is wrong. Use /api/stats".
-    // /api/stats returns { total_players, active_runs }.
-    // The UI has: Active Runs, Pending Runs, Completed Runs, Players.
-    // I will map active_runs to Active.
-    // I will map total_players to Players.
-    // For Pending and Completed, I will still use the local runs list calculation as the API doesn't seem to provide them explicitly (only active_runs).
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
     const pending = runs.filter((r) => r.status === "PENDING").length;
     const completed = runs.filter((r) => r.status === "COMPLETED").length;
@@ -272,7 +272,7 @@ export default function AdminRunsIndexPage() {
                 className="grid gap-8 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] items-start"
                 onSubmit={form.handleSubmit(onSubmit as any)}
               >
-                {/* Left column - main form fields */}
+                {}
                 <div className="space-y-5">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="grid gap-2">
@@ -379,7 +379,7 @@ export default function AdminRunsIndexPage() {
                   </div>
                 </div>
 
-                {/* Right column - schedule panel */}
+                {}
                 <div className="rounded-2xl border border-border/60 bg-card/80 p-4 flex flex-col gap-4 max-h-[380px]">
                   <div className="flex items-start justify-between gap-3">
                     <div>
